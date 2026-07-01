@@ -10,6 +10,7 @@ import com.google.mediapipe.tasks.core.BaseOptions
 import com.google.mediapipe.tasks.vision.core.RunningMode
 import com.google.mediapipe.tasks.vision.poselandmarker.PoseLandmarker
 import com.google.mediapipe.tasks.vision.poselandmarker.PoseLandmarkerResult
+import java.util.concurrent.ConcurrentHashMap
 
 class PoseLandmarkerHelper(
     context: Context,
@@ -47,7 +48,9 @@ class PoseLandmarkerHelper(
     // single shared timer field gets overwritten by each new submit before a slower-processing
     // earlier frame's result returns, corrupting the latency measurement. Track submit time per
     // frame timestamp instead so each result is matched back to the call that produced it.
-    private val frameSubmitTimes = mutableMapOf<Long, Long>()
+    // detectAsync (CameraX executor thread) and handleResult (MediaPipe's callback thread) can
+    // run concurrently, so this must be a concurrent map, not a plain mutableMapOf.
+    private val frameSubmitTimes = ConcurrentHashMap<Long, Long>()
 
     fun detectAsync(bitmap: Bitmap, rotationDegrees: Int, isFrontCamera: Boolean, frameTimeMs: Long) {
         frameSubmitTimes[frameTimeMs] = SystemClock.uptimeMillis()
@@ -69,5 +72,6 @@ class PoseLandmarkerHelper(
     fun close() {
         poseLandmarker?.close()
         poseLandmarker = null
+        frameSubmitTimes.clear()
     }
 }
