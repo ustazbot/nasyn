@@ -70,3 +70,16 @@ Semasa ujian langsung (bukan dari CSV — overlay diperhatikan secara real-time 
 1. Jalankan protokol manual penuh (≥15–20 rep setiap QIYAM/RUKUK/SUJUD/DUDUK, pakaian biasa) untuk dapatkan sampel mencukupi — walaupun SUJUD dijangka gagal, kekalkan dalam protokol untuk sahkan kekerapan kegagalan.
 2. Sebelum/semasa itu, uji sekurang-kurangnya satu variasi kedudukan/sudut kamera untuk SUJUD (contoh: kamera lebih tinggi menghadap ke bawah, atau sudut condong) — kalau ini menyelesaikan isu, ubah spesifikasi Camera Placement PRD §5 dan bukan NO-GO Vision Mode sepenuhnya.
 3. Selepas asas (pakaian biasa) mencukupi, teruskan susulan telekung/jubah + pencahayaan rendah per design spec.
+
+---
+
+## Keputusan Bos (2026-07-02)
+
+**Teruskan ke Fasa 1** (FSM + Guided Mode core) walaupun data spike masih tipis dan SUJUD belum selesai.
+
+**Sebab:** Pemerhatian langsung berulang kali menunjukkan titik landmark (dots hijau) sentiasa mengiringi muka + bahu dengan stabil untuk pose selain SUJUD — cukup meyakinkan untuk teruskan pembangunan tanpa tunggu protokol penuh selesai.
+
+**Implikasi:**
+- Vision Mode integration (Fasa 3 dalam roadmap PRD §12) masih bergantung pada SUJUD diselesaikan (reposisi kamera / sudut) sebelum boleh declare GO penuh — ini **belum** selesai, cuma pembangunan lain (FSM, Guided Mode) tak perlu tunggu.
+- Fasa 1 (FSM + Guided Mode, timing-based, tiada kamera) adalah pilihan selamat untuk teruskan sekarang sebab ia **tidak bergantung** pada Vision Mode/pose classification langsung — sebab inilah PRD sendiri strukturkan Fasa 1 sebelum Fasa 3 (Vision Integration).
+- Protokol ujian penuh (≥15-20 rep/kelas) + eksperimen kedudukan kamera SUJUD masih outstanding — patut disambung selari atau sebelum Fasa 3 bermula, bukan dibuang terus.
