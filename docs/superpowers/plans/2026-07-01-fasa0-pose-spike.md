@@ -555,7 +555,7 @@ git commit -m "Add MediaPipe PoseLandmarker LIVE_STREAM wrapper"
 - Consumes: `PoseLandmarkerHelper` and `PoseLandmarkerHelper.Listener` (Task 3), `PoseClassifier`, `CalibrationProfile`, `PoseLandmarks`, `Point`, `PoseClass`, `PoseClassification` (Task 2).
 - Produces:
   - `object LandmarkMapper` with `fun toPoseLandmarks(result: PoseLandmarkerResult): PoseLandmarks?` (null if no pose detected in frame)
-  - `MainActivity` holds `val calibration = CalibrationProfile()` and `val classifier = PoseClassifier(calibration)`, and exposes the latest `PoseClassification` + `inferenceTimeMs` via a `MutableState`-free simple callback interface `interface ResultObserver { fun onClassification(classification: PoseClassification, inferenceTimeMs: Long) }` that Task 5 (overlay) and Task 6 (tally) will register against.
+  - `MainActivity` holds `val calibration = CalibrationProfile()` and `val classifier = PoseClassifier(calibration)`, and exposes the latest `PoseClassification` + landmarks + `inferenceTimeMs` via a `MutableState`-free simple callback interface `interface ResultObserver { fun onClassification(classification: PoseClassification, landmarks: PoseLandmarks?, inferenceTimeMs: Long) }` that Task 5 (overlay, which draws the landmark dots) and Task 6 (tally) will register against.
 
 - [ ] **Step 1: Write `LandmarkMapper.kt`**
 
