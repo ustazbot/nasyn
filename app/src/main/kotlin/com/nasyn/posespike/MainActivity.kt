@@ -5,6 +5,7 @@ import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.os.Bundle
 import android.util.Size
+import android.view.ViewGroup
 import android.widget.FrameLayout
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
@@ -21,6 +22,7 @@ import com.nasyn.posespike.pose.PoseClassification
 import com.nasyn.posespike.pose.PoseClassifier
 import com.nasyn.posespike.pose.PoseLandmarkerHelper
 import com.nasyn.posespike.pose.PoseLandmarks
+import com.nasyn.posespike.ui.PoseOverlayView
 
 interface ResultObserver {
     fun onClassification(classification: PoseClassification, landmarks: PoseLandmarks?, inferenceTimeMs: Long)
@@ -47,6 +49,14 @@ class MainActivity : AppCompatActivity(), PoseLandmarkerHelper.Listener {
         previewView = PreviewView(this)
         rootLayout.addView(previewView)
         setContentView(rootLayout)
+
+        val overlay = PoseOverlayView(this)
+        rootLayout.addView(overlay, ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT))
+        setResultObserver(object : ResultObserver {
+            override fun onClassification(classification: PoseClassification, landmarks: PoseLandmarks?, inferenceTimeMs: Long) {
+                overlay.update(classification, landmarks, inferenceTimeMs)
+            }
+        })
 
         poseLandmarkerHelper = PoseLandmarkerHelper(this, this)
 
