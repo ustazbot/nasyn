@@ -217,6 +217,26 @@ Fasa 2's real UI arrives).
 - No instrumented/widget tests for the minimum UI — throwaway, rebuilt in
   Fasa 2.
 
+## Addendum (found while writing the implementation plan)
+
+**`takbiratulIhram` and `salam` timing (gap in section 3's table):** these
+are brief transitional utterances, not fixed-posture tuma'ninah states or
+variable-length recitation. Rule: auto-advance when their audio cue
+finishes playing (any assistance level — even Takbir Only plays the
+opening takbir per PRD §7); if no cue is defined for a level, fall back to
+a short fixed 2s timer instead of waiting on manual Next.
+
+**`AudioService` is an interface, not a concrete class:** `audioplayers`
+uses platform channels, which don't run under plain `dart test`/`flutter
+test` without real platform bindings. So `AudioService` is an abstract
+class (`play`, `stop`, `onComplete` stream) with `AudioPlayerService`
+(real `audioplayers`-backed) as the production implementation, and a
+`FakeAudioService` test double (in-memory, manually-triggered `onComplete`
+stream) for `GuidedModeController` unit tests. `NasynAudio` paths are
+declared with the `assets/` prefix (matching pubspec style); `audioplayers`'
+`AssetSource` expects that prefix stripped, so `AudioPlayerService.play()`
+normalizes the path before use.
+
 ## Out of Scope (explicitly)
 
 - Vision Mode / pose detection / camera (Fasa 3)
