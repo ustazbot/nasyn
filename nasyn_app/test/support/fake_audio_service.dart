@@ -22,6 +22,7 @@ class FakeAudioService implements AudioService {
     _completeController.add(null);
   }
 
+  @override
   void dispose() {
     _completeController.close();
   }

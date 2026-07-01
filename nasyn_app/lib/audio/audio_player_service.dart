@@ -22,5 +22,6 @@ class AudioPlayerService implements AudioService {
   @override
   Stream<void> get onComplete => _player.onPlayerComplete;
 
+  @override
   void dispose() => _player.dispose();
 }
