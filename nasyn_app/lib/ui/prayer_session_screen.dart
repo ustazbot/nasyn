@@ -23,7 +23,7 @@ final guidedModeControllerProvider = ChangeNotifierProvider.autoDispose
   },
 );
 
-class PrayerSessionScreen extends ConsumerWidget {
+class PrayerSessionScreen extends ConsumerStatefulWidget {
   final PrayerType prayerType;
   final AssistanceLevel level;
 
@@ -34,16 +34,25 @@ class PrayerSessionScreen extends ConsumerWidget {
   });
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final args = (type: prayerType, level: level);
-    final controller = ref.watch(guidedModeControllerProvider(args));
-    final config = prayerConfigs[prayerType]!;
+  ConsumerState<PrayerSessionScreen> createState() => _PrayerSessionScreenState();
+}
 
-    if (controller.isComplete) {
+class _PrayerSessionScreenState extends ConsumerState<PrayerSessionScreen> {
+  bool _hasNavigated = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final args = (type: widget.prayerType, level: widget.level);
+    final controller = ref.watch(guidedModeControllerProvider(args));
+    final config = prayerConfigs[widget.prayerType]!;
+
+    if (controller.isComplete && !_hasNavigated) {
+      _hasNavigated = true;
       WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
         Navigator.of(context).pushReplacement(MaterialPageRoute(
           builder: (_) => SessionSummaryScreen(
-            prayerType: prayerType,
+            prayerType: widget.prayerType,
             totalRakaat: config.rakaatCount,
           ),
         ));
