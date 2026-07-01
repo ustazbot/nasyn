@@ -5,6 +5,7 @@ import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.os.Bundle
 import android.util.Size
+import android.view.Gravity
 import android.view.ViewGroup
 import android.widget.FrameLayout
 import androidx.activity.result.contract.ActivityResultContracts
@@ -22,6 +23,8 @@ import com.nasyn.posespike.pose.PoseClassification
 import com.nasyn.posespike.pose.PoseClassifier
 import com.nasyn.posespike.pose.PoseLandmarkerHelper
 import com.nasyn.posespike.pose.PoseLandmarks
+import com.nasyn.posespike.tally.TallyLogger
+import com.nasyn.posespike.ui.ControlPanel
 import com.nasyn.posespike.ui.PoseOverlayView
 
 interface ResultObserver {
@@ -37,6 +40,9 @@ class MainActivity : AppCompatActivity(), PoseLandmarkerHelper.Listener {
     private var poseLandmarkerHelper: PoseLandmarkerHelper? = null
     private lateinit var previewView: PreviewView
     private lateinit var rootLayout: FrameLayout
+
+    private var latestLandmarks: PoseLandmarks? = null
+    private var latestClassification: PoseClassification = PoseClassification(PoseClass.UNKNOWN, 0)
 
     private val requestCameraPermission = registerForActivityResult(
         ActivityResultContracts.RequestPermission()
@@ -54,9 +60,20 @@ class MainActivity : AppCompatActivity(), PoseLandmarkerHelper.Listener {
         rootLayout.addView(overlay, ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT))
         setResultObserver(object : ResultObserver {
             override fun onClassification(classification: PoseClassification, landmarks: PoseLandmarks?, inferenceTimeMs: Long) {
+                latestLandmarks = landmarks
+                latestClassification = classification
                 overlay.update(classification, landmarks, inferenceTimeMs)
             }
         })
+
+        val tallyLogger = TallyLogger(this)
+        val controlPanel = ControlPanel(this, calibration, tallyLogger)
+        controlPanel.currentLandmarksProvider { latestLandmarks }
+        controlPanel.currentClassificationProvider { latestClassification }
+        rootLayout.addView(
+            controlPanel,
+            FrameLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.BOTTOM),
+        )
 
         poseLandmarkerHelper = PoseLandmarkerHelper(this, this)
 
