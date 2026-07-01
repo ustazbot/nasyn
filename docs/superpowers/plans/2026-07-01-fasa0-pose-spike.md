@@ -502,10 +502,13 @@ class PoseLandmarkerHelper(
         poseLandmarker = PoseLandmarker.createFromOptions(context, options)
     }
 
-    private var lastFrameStartMs = 0L
+    // frameTimeMs -> submit time, so a result is timed against the frame that
+    // produced it (LIVE_STREAM is async; a shared single-field timer would get
+    // overwritten by a later submit before an earlier result returns).
+    private val frameSubmitTimes = mutableMapOf<Long, Long>()
 
     fun detectAsync(bitmap: Bitmap, rotationDegrees: Int, isFrontCamera: Boolean, frameTimeMs: Long) {
-        lastFrameStartMs = SystemClock.uptimeMillis()
+        frameSubmitTimes[frameTimeMs] = SystemClock.uptimeMillis()
         val matrix = Matrix().apply {
             postRotate(rotationDegrees.toFloat())
             if (isFrontCamera) postScale(-1f, 1f, bitmap.width.toFloat(), bitmap.height.toFloat())
@@ -515,8 +518,9 @@ class PoseLandmarkerHelper(
         poseLandmarker?.detectAsync(mpImage, frameTimeMs)
     }
 
-    private fun handleResult(result: PoseLandmarkerResult) {
-        val inferenceTimeMs = SystemClock.uptimeMillis() - lastFrameStartMs
+    private fun handleResult(result: PoseLandmarkerResult, image: MPImage) {
+        val submitTime = frameSubmitTimes.remove(result.timestampMs())
+        val inferenceTimeMs = if (submitTime != null) SystemClock.uptimeMillis() - submitTime else 0L
         listener.onResult(result, inferenceTimeMs)
     }
 
