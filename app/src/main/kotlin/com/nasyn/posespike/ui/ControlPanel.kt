@@ -18,6 +18,7 @@ class ControlPanel(
 
     private var landmarksProvider: () -> PoseLandmarks? = { null }
     private var classificationProvider: () -> PoseClassification = { PoseClassification(PoseClass.UNKNOWN, 0) }
+    private var inferenceTimeMsProvider: () -> Long = { 0L }
     private val summaryView: TextView
 
     init {
@@ -44,7 +45,7 @@ class ControlPanel(
             text = "✓ Correct"
             setOnClickListener {
                 val result = classificationProvider()
-                tallyLogger.log(result.poseClass, result.confidence, 0, correct = true)
+                tallyLogger.log(result.poseClass, result.confidence, inferenceTimeMsProvider(), correct = true)
                 refreshSummary()
             }
         })
@@ -52,7 +53,7 @@ class ControlPanel(
             text = "✗ Wrong"
             setOnClickListener {
                 val result = classificationProvider()
-                tallyLogger.log(result.poseClass, result.confidence, 0, correct = false)
+                tallyLogger.log(result.poseClass, result.confidence, inferenceTimeMsProvider(), correct = false)
                 refreshSummary()
             }
         })
@@ -68,6 +69,10 @@ class ControlPanel(
 
     fun currentClassificationProvider(provider: () -> PoseClassification) {
         classificationProvider = provider
+    }
+
+    fun currentInferenceTimeMsProvider(provider: () -> Long) {
+        inferenceTimeMsProvider = provider
     }
 
     private fun refreshSummary() {

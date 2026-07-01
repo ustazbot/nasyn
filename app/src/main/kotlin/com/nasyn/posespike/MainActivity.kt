@@ -43,6 +43,7 @@ class MainActivity : AppCompatActivity(), PoseLandmarkerHelper.Listener {
 
     private var latestLandmarks: PoseLandmarks? = null
     private var latestClassification: PoseClassification = PoseClassification(PoseClass.UNKNOWN, 0)
+    private var latestInferenceTimeMs: Long = 0
 
     private val requestCameraPermission = registerForActivityResult(
         ActivityResultContracts.RequestPermission()
@@ -62,6 +63,7 @@ class MainActivity : AppCompatActivity(), PoseLandmarkerHelper.Listener {
             override fun onClassification(classification: PoseClassification, landmarks: PoseLandmarks?, inferenceTimeMs: Long) {
                 latestLandmarks = landmarks
                 latestClassification = classification
+                latestInferenceTimeMs = inferenceTimeMs
                 overlay.update(classification, landmarks, inferenceTimeMs)
             }
         })
@@ -70,6 +72,7 @@ class MainActivity : AppCompatActivity(), PoseLandmarkerHelper.Listener {
         val controlPanel = ControlPanel(this, calibration, tallyLogger)
         controlPanel.currentLandmarksProvider { latestLandmarks }
         controlPanel.currentClassificationProvider { latestClassification }
+        controlPanel.currentInferenceTimeMsProvider { latestInferenceTimeMs }
         rootLayout.addView(
             controlPanel,
             FrameLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.BOTTOM),
