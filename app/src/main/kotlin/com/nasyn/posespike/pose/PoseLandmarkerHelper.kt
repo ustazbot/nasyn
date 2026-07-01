@@ -41,10 +41,16 @@ class PoseLandmarkerHelper(
         poseLandmarker = PoseLandmarker.createFromOptions(context, options)
     }
 
-    private var lastFrameStartMs = 0L
+    // LIVE_STREAM mode is asynchronous: CameraX keeps calling detectAsync (~every 33ms) even
+    // while a previous frame's inference is still running. On a weak device, inference can take
+    // 50-150ms, longer than the frame interval, so multiple frames can be in flight at once. A
+    // single shared timer field gets overwritten by each new submit before a slower-processing
+    // earlier frame's result returns, corrupting the latency measurement. Track submit time per
+    // frame timestamp instead so each result is matched back to the call that produced it.
+    private val frameSubmitTimes = mutableMapOf<Long, Long>()
 
     fun detectAsync(bitmap: Bitmap, rotationDegrees: Int, isFrontCamera: Boolean, frameTimeMs: Long) {
-        lastFrameStartMs = SystemClock.uptimeMillis()
+        frameSubmitTimes[frameTimeMs] = SystemClock.uptimeMillis()
         val matrix = Matrix().apply {
             postRotate(rotationDegrees.toFloat())
             if (isFrontCamera) postScale(-1f, 1f, bitmap.width.toFloat(), bitmap.height.toFloat())
@@ -55,7 +61,8 @@ class PoseLandmarkerHelper(
     }
 
     private fun handleResult(result: PoseLandmarkerResult, image: MPImage) {
-        val inferenceTimeMs = SystemClock.uptimeMillis() - lastFrameStartMs
+        val submitTime = frameSubmitTimes.remove(result.timestampMs())
+        val inferenceTimeMs = if (submitTime != null) SystemClock.uptimeMillis() - submitTime else 0L
         listener.onResult(result, inferenceTimeMs)
     }
 
