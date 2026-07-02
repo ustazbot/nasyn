@@ -64,6 +64,8 @@ flutter:
     - assets/audio/posisi/
     - assets/audio/quran/al-husary/
     - assets/audio/quran/al-misyari/
+    - assets/images/
+    - assets/images/poses/
 
   # To add assets to your application, add an assets section, like this:
   # assets:
