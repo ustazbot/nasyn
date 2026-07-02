@@ -15,7 +15,6 @@ import '../theme/app_colors.dart';
 import '../theme/app_text_styles.dart';
 import '../theme/responsive.dart';
 import 'session_summary_screen.dart';
-import 'widgets/app_bottom_nav.dart';
 
 final guidedModeControllerProvider = ChangeNotifierProvider.autoDispose
     .family<GuidedModeController, ({PrayerType type, AssistanceLevel level})>(
@@ -60,6 +59,46 @@ class PrayerSessionScreen extends ConsumerStatefulWidget {
 
 class _PrayerSessionScreenState extends ConsumerState<PrayerSessionScreen> {
   bool _hasNavigated = false;
+
+  Future<void> _confirmExit(AppLocale locale) async {
+    final controller = ref.read(guidedModeControllerProvider(
+        (type: widget.prayerType, level: widget.level)));
+    final wasPaused = controller.isPaused;
+    if (!wasPaused) controller.pause();
+
+    final exit = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: AppColors.surfaceMuted,
+        title: Text(
+          AppStrings.of('exitSession', locale),
+          style: AppTextStyles.body,
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: Text(AppStrings.of('batal', locale),
+                style: AppTextStyles.label),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: Text(
+              AppStrings.of('ya', locale),
+              style: AppTextStyles.label
+                  .copyWith(color: AppColors.errorRed),
+            ),
+          ),
+        ],
+      ),
+    );
+
+    if (!mounted) return;
+    if (exit == true) {
+      Navigator.of(context).popUntil((route) => route.isFirst);
+    } else if (!wasPaused) {
+      controller.resume();
+    }
+  }
 
   void _showRecitationSheet(String recitation) {
     showModalBottomSheet<void>(
@@ -139,21 +178,39 @@ class _PrayerSessionScreenState extends ConsumerState<PrayerSessionScreen> {
                   ),
                   // Toggle bahasa — dipindah dari bottom nav (icon kecil corner)
                   GestureDetector(
+                    behavior: HitTestBehavior.opaque,
                     onTap: () {
                       final current = ref.read(appLocaleProvider);
                       ref.read(appLocaleProvider.notifier).state =
                           current == AppLocale.bm ? AppLocale.en : AppLocale.bm;
                     },
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const Icon(Icons.language,
-                            color: AppColors.lightText, size: 28),
-                        Text(
-                          locale == AppLocale.bm ? 'BM' : 'EN',
-                          style: AppTextStyles.label.copyWith(fontSize: 16),
-                        ),
-                      ],
+                    child: ConstrainedBox(
+                      constraints:
+                          const BoxConstraints(minWidth: 48, minHeight: 48),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const Icon(Icons.language,
+                              color: AppColors.lightText, size: 28),
+                          Text(
+                            locale == AppLocale.bm ? 'BM' : 'EN',
+                            style: AppTextStyles.label.copyWith(fontSize: 16),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  // Exit sesi — visual kecil, tap target kekal 48x48dp
+                  GestureDetector(
+                    behavior: HitTestBehavior.opaque,
+                    onTap: () => _confirmExit(locale),
+                    child: const SizedBox(
+                      width: 48,
+                      height: 48,
+                      child: Icon(Icons.close,
+                          color: AppColors.lightText, size: 28),
                     ),
                   ),
                 ],
@@ -191,6 +248,9 @@ class _PrayerSessionScreenState extends ConsumerState<PrayerSessionScreen> {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
+                  // BACKLOG: ring progress indicator — rujuk design session
+                  // 2 Julai 2026, bina hanya jika pilot feedback tunjuk
+                  // Takbir Only mode rasa "stuck"
                   if (iconAsset != null)
                     Image.asset(iconAsset, height: 140, color: AppColors.lightText),
                   const SizedBox(height: 16),
@@ -242,7 +302,6 @@ class _PrayerSessionScreenState extends ConsumerState<PrayerSessionScreen> {
                 ),
               ),
             ),
-            const AppBottomNav(),
           ],
         ),
       ),

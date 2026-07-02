@@ -33,6 +33,14 @@ class AppStrings {
       AppLocale.en: 'Settings coming soon',
     },
     'rakaatLabel': {AppLocale.bm: 'rakaat', AppLocale.en: 'rakaat'},
+    'exitSession': {
+      AppLocale.bm: 'Keluar dari sesi solat?',
+      AppLocale.en: 'Exit prayer session?',
+    },
+    'startSession': {AppLocale.bm: 'Teruskan?', AppLocale.en: 'Continue?'},
+    'solat': {AppLocale.bm: 'Solat', AppLocale.en: 'Prayer'},
+    'ya': {AppLocale.bm: 'Ya', AppLocale.en: 'Yes'},
+    'batal': {AppLocale.bm: 'Batal', AppLocale.en: 'Cancel'},
   };
 
   static String of(String key, AppLocale locale) {

@@ -21,6 +21,46 @@ class HomeScreen extends ConsumerStatefulWidget {
 class _HomeScreenState extends ConsumerState<HomeScreen> {
   AssistanceLevel _selectedLevel = AssistanceLevel.fullRecite;
 
+  // Elak mis-tap pilih solat salah — confirm dulu sebelum mula sesi.
+  Future<void> _confirmStart(
+      PrayerType type, PrayerConfig config, AppLocale locale) async {
+    final start = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: AppColors.surfaceMuted,
+        title: Text(
+          '${AppStrings.of('solat', locale)} ${config.displayName} — '
+          '${AppStrings.of('startSession', locale)}',
+          style: AppTextStyles.body,
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child:
+                Text(AppStrings.of('batal', locale), style: AppTextStyles.label),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: Text(
+              AppStrings.of('ya', locale),
+              style:
+                  AppTextStyles.label.copyWith(color: AppColors.accentGreen),
+            ),
+          ),
+        ],
+      ),
+    );
+
+    if (start == true && mounted) {
+      Navigator.of(context).push(MaterialPageRoute(
+        builder: (_) => PrayerSessionScreen(
+          prayerType: type,
+          level: _selectedLevel,
+        ),
+      ));
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final locale = ref.watch(appLocaleProvider);
@@ -49,14 +89,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   return _SolatButton(
                     config: config,
                     locale: locale,
-                    onTap: () {
-                      Navigator.of(context).push(MaterialPageRoute(
-                        builder: (_) => PrayerSessionScreen(
-                          prayerType: type,
-                          level: _selectedLevel,
-                        ),
-                      ));
-                    },
+                    onTap: () => _confirmStart(type, config, locale),
                   );
                 }).toList(),
               ),
