@@ -7,6 +7,7 @@ import '../audio/audio_player_service.dart';
 import '../guided/guided_mode_controller.dart';
 import '../i18n/app_locale.dart';
 import '../i18n/app_strings.dart';
+import '../kiosk/kiosk_service.dart';
 import '../prayer/prayer_config.dart';
 import '../prayer/prayer_recitation_text.dart';
 import '../prayer/prayer_state.dart';
@@ -101,6 +102,9 @@ class _PrayerSessionScreenState extends ConsumerState<PrayerSessionScreen> {
 
     if (!mounted) return;
     if (exit == true) {
+      // PENTING: unpin SEBELUM keluar — jangan tinggal user ter-pin.
+      await KioskService.stopPinning();
+      if (!mounted) return;
       Navigator.of(context).popUntil((route) => route.isFirst);
     } else if (!wasPaused) {
       controller.resume();
@@ -144,6 +148,9 @@ class _PrayerSessionScreenState extends ConsumerState<PrayerSessionScreen> {
     if (controller.isComplete && !_hasNavigated) {
       _hasNavigated = true;
       WidgetsBinding.instance.addPostFrameCallback((_) {
+        // Solat selesai natural — unpin; tak perlu tunggu sebab Summary
+        // masih dalam app sendiri (fire-and-forget elak async gap).
+        KioskService.stopPinning();
         if (!mounted) return;
         Navigator.of(context).pushReplacement(
           MaterialPageRoute(
