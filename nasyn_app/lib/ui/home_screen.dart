@@ -7,6 +7,7 @@ import '../i18n/app_strings.dart';
 import '../prayer/prayer_config.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_text_styles.dart';
+import '../theme/responsive.dart';
 import 'prayer_session_screen.dart';
 import 'widgets/app_bottom_nav.dart';
 
@@ -39,6 +40,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             Expanded(
               child: GridView.count(
                 crossAxisCount: 2,
+                childAspectRatio: 1.4,
                 padding: const EdgeInsets.all(16),
                 mainAxisSpacing: 16,
                 crossAxisSpacing: 16,
@@ -73,6 +75,7 @@ class _ModeToggleRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final s = Responsive.scale(context);
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
       child: Row(
@@ -85,11 +88,15 @@ class _ModeToggleRow extends StatelessWidget {
                 borderRadius: BorderRadius.circular(24),
               ),
               child: Center(
-                child: Text(
-                  AppStrings.of('guidedMode', locale),
-                  style: AppTextStyles.body.copyWith(
-                    color: Colors.black,
-                    fontWeight: FontWeight.bold,
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Text(
+                    AppStrings.of('guidedMode', locale),
+                    style: AppTextStyles.body.copyWith(
+                      fontSize: 36 * s,
+                      color: Colors.black,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 ),
               ),
@@ -108,16 +115,26 @@ class _ModeToggleRow extends StatelessWidget {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Text(
-                      AppStrings.of('visionMode', locale),
-                      style: AppTextStyles.body.copyWith(
-                        color: Colors.black,
-                        fontWeight: FontWeight.bold,
+                    FittedBox(
+                      fit: BoxFit.scaleDown,
+                      child: Text(
+                        AppStrings.of('visionMode', locale),
+                        style: AppTextStyles.body.copyWith(
+                          fontSize: 36 * s,
+                          color: Colors.black,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                     ),
-                    Text(
-                      AppStrings.of('comingSoon', locale),
-                      style: AppTextStyles.label.copyWith(color: Colors.black87),
+                    FittedBox(
+                      fit: BoxFit.scaleDown,
+                      child: Text(
+                        AppStrings.of('comingSoon', locale),
+                        style: AppTextStyles.label.copyWith(
+                          fontSize: 24 * s,
+                          color: Colors.black87,
+                        ),
+                      ),
                     ),
                   ],
                 ),
@@ -165,12 +182,17 @@ class _AssistanceSpectrum extends StatelessWidget {
                   borderRadius: BorderRadius.circular(16),
                 ),
                 child: Center(
-                  child: Text(
-                    label,
-                    textAlign: TextAlign.center,
-                    style: AppTextStyles.label.copyWith(
-                      color: isSelected ? Colors.black : AppColors.lightText,
-                      fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                  child: FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: Text(
+                      label,
+                      textAlign: TextAlign.center,
+                      style: AppTextStyles.label.copyWith(
+                        fontSize: 24 * Responsive.scale(context),
+                        color: isSelected ? Colors.black : AppColors.lightText,
+                        fontWeight:
+                            isSelected ? FontWeight.bold : FontWeight.normal,
+                      ),
                     ),
                   ),
                 ),
@@ -207,14 +229,25 @@ class _SolatButton extends StatelessWidget {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Text(
-                config.displayName.toUpperCase(),
-                style: AppTextStyles.body.copyWith(fontWeight: FontWeight.bold),
+              FittedBox(
+                fit: BoxFit.scaleDown,
+                child: Text(
+                  config.displayName.toUpperCase(),
+                  style: AppTextStyles.body.copyWith(
+                    fontSize: 36 * Responsive.scale(context),
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
               ),
               const SizedBox(height: 4),
-              Text(
-                '(${config.rakaatCount} ${AppStrings.of('rakaatLabel', locale)})',
-                style: AppTextStyles.label,
+              FittedBox(
+                fit: BoxFit.scaleDown,
+                child: Text(
+                  '(${config.rakaatCount} ${AppStrings.of('rakaatLabel', locale)})',
+                  style: AppTextStyles.label.copyWith(
+                    fontSize: 24 * Responsive.scale(context),
+                  ),
+                ),
               ),
             ],
           ),

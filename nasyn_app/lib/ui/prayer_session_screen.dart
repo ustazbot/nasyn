@@ -13,6 +13,7 @@ import '../prayer/prayer_state.dart';
 import '../prayer/prayer_state_labels.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_text_styles.dart';
+import '../theme/responsive.dart';
 import 'session_summary_screen.dart';
 import 'widgets/app_bottom_nav.dart';
 
@@ -125,9 +126,15 @@ class _PrayerSessionScreenState extends ConsumerState<PrayerSessionScreen> {
               child: Row(
                 children: [
                   Expanded(
-                    child: Text(
-                      config.displayName.toUpperCase(),
-                      style: AppTextStyles.display.copyWith(fontSize: 40),
+                    child: FittedBox(
+                      fit: BoxFit.scaleDown,
+                      alignment: Alignment.centerLeft,
+                      child: Text(
+                        config.displayName.toUpperCase(),
+                        style: AppTextStyles.display.copyWith(
+                          fontSize: 40 * Responsive.scale(context),
+                        ),
+                      ),
                     ),
                   ),
                   // Toggle bahasa — dipindah dari bottom nav (icon kecil corner)
@@ -187,16 +194,31 @@ class _PrayerSessionScreenState extends ConsumerState<PrayerSessionScreen> {
                   if (iconAsset != null)
                     Image.asset(iconAsset, height: 140, color: AppColors.lightText),
                   const SizedBox(height: 16),
-                  Text(
-                    (locale == AppLocale.bm
-                            ? prayerStateLabelsBm
-                            : prayerStateLabelsEn)[controller.currentState] ??
-                        '',
-                    style: AppTextStyles.display.copyWith(fontSize: 48),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: FittedBox(
+                      fit: BoxFit.scaleDown,
+                      child: Text(
+                        (locale == AppLocale.bm
+                                ? prayerStateLabelsBm
+                                : prayerStateLabelsEn)[
+                                controller.currentState] ??
+                            '',
+                        textAlign: TextAlign.center,
+                        style: AppTextStyles.display.copyWith(
+                          fontSize: 48 * Responsive.scale(context),
+                        ),
+                      ),
+                    ),
                   ),
-                  Text(
-                    prayerStateLabelsArabic[controller.currentState] ?? '',
-                    style: AppTextStyles.body,
+                  FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: Text(
+                      prayerStateLabelsArabic[controller.currentState] ?? '',
+                      style: AppTextStyles.body.copyWith(
+                        fontSize: 36 * Responsive.scale(context),
+                      ),
+                    ),
                   ),
                 ],
               ),
