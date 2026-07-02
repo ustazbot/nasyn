@@ -1768,6 +1768,185 @@ tasbih (not the iktidal one).
 
 ---
 
+## Task 8: Correct the Task 7 audio-swap mistake, fix double-takbir, and adjust tuma'ninah
+
+> Added after re-testing Task 7 on device (2026-07-02). Task 7's file swap
+> was itself wrong — the *original* `bacaan-rukuk.mp3`/`bacaan-iktidal.mp3`
+> content was correctly paired all along (confirmed by Bos listening to the
+> raw files directly: the 112558-byte file is genuinely the iktidal
+> recitation, the 61149-byte file is genuinely the rukuk tasbih — exactly
+> the original, pre-Task-7 pairing). Task 7's swap inverted a correct
+> mapping based on a misreading of the original Task 6 bug report. Bos has
+> already manually renamed the files inside `nasyn_app/assets/audio/rukun/`
+> to `iktidal.mp3` (112558 bytes) and `tasbih-rukuk.mp3` (61149 bytes) —
+> this task brings the source asset folder and the Dart code in line with
+> that correct, already-fixed state, plus two independent corrections
+> (double-takbir-at-session-start, tuma'ninah +1s) found in the same
+> re-test. Confirmed with Bos before implementing.
+
+**Files:**
+- Modify (rename only — content is already correct, do not swap again): `NASYN-v-Claude-assets/assets/audio/rukun/bacaan-rukuk.mp3` → `iktidal.mp3`, `NASYN-v-Claude-assets/assets/audio/rukun/bacaan-iktidal.mp3` → `tasbih-rukuk.mp3`
+- Verify only (already done by Bos, do not touch): `nasyn_app/assets/audio/rukun/iktidal.mp3` (112558 bytes), `nasyn_app/assets/audio/rukun/tasbih-rukuk.mp3` (61149 bytes)
+- Modify: `nasyn_audio.dart` (repo root copy) and `nasyn_app/lib/audio/nasyn_audio.dart` — update the `bacaanRukuk`/`bacaanIktidal` path strings to the new filenames (keep the Dart constant names unchanged — only their string values change, to minimize churn across `AudioCueResolver` and its tests, which reference the constants by name, not by literal path string)
+- Modify: `nasyn_app/lib/guided/guided_mode_controller.dart` (double-takbir fix)
+- Modify: `nasyn_app/lib/guided/guided_mode_controller.dart` (tuma'ninah durations)
+- Modify: `nasyn_app/test/guided/guided_mode_controller_test.dart` (update any test asserting old durations or the old double-takbir behavior)
+
+**Interfaces:**
+- Consumes: existing `NasynAudio`, `GuidedModeController`, `PrayerStateEngine.currentRakaat`.
+- Produces: no new public interfaces — corrects existing behavior only.
+
+- [ ] **Step 1: Rename the source asset files (content is already correct — this is a rename, not another content swap)**
+
+```bash
+cd /home/astro/claude-project/NASYN-v-Claude
+mv NASYN-v-Claude-assets/assets/audio/rukun/bacaan-rukuk.mp3 NASYN-v-Claude-assets/assets/audio/rukun/iktidal.mp3
+mv NASYN-v-Claude-assets/assets/audio/rukun/bacaan-iktidal.mp3 NASYN-v-Claude-assets/assets/audio/rukun/tasbih-rukuk.mp3
+ls -la NASYN-v-Claude-assets/assets/audio/rukun/iktidal.mp3 NASYN-v-Claude-assets/assets/audio/rukun/tasbih-rukuk.mp3
+```
+
+Expected: `iktidal.mp3` is 112558 bytes, `tasbih-rukuk.mp3` is 61149 bytes — matching what's already correctly in place at `nasyn_app/assets/audio/rukun/` (verify with `ls -la nasyn_app/assets/audio/rukun/iktidal.mp3 nasyn_app/assets/audio/rukun/tasbih-rukuk.mp3` — do NOT modify these, only confirm they already match).
+
+- [ ] **Step 2: Update `nasyn_audio.dart` in both locations**
+
+In `nasyn_app/lib/audio/nasyn_audio.dart` AND the repo-root copy
+`nasyn_audio.dart`, change:
+
+```dart
+static const String bacaanRukuk = '${_rukun}bacaan-rukuk.mp3';
+static const String bacaanIktidal = '${_rukun}bacaan-iktidal.mp3';
+```
+
+to:
+
+```dart
+static const String bacaanRukuk = '${_rukun}tasbih-rukuk.mp3';
+static const String bacaanIktidal = '${_rukun}iktidal.mp3';
+```
+
+(Constant names stay the same — `bacaanRukuk` still means "the audio to
+play for the rukuk tasbih", `bacaanIktidal` still means "the audio to
+play for iktidal" — only the underlying filename each points to changes,
+matching the renamed files.)
+
+- [ ] **Step 3: Fix the double-takbir-at-session-start bug**
+
+Read the current `nasyn_app/lib/guided/guided_mode_controller.dart`
+(from Task 7). The bug: entering `PrayerState.qiyam` always plays a
+takbir prefix per `cueResolver.needsTakbirTransition()`, but this is
+wrong for the very first Qiyam of the session (rakaat 1, entered
+immediately after `takbiratulIhram`'s own takbir) — that would play the
+opening takbir twice in a row. Subsequent Qiyams (rakaat 2+, after
+standing up from Sujud or Tahiyat Awal) correctly still need one. Fix by
+adding a rakaat check in `_enterState()`:
+
+```dart
+void _enterState() {
+  _timer?.cancel();
+  _audioCompleteSub?.cancel();
+
+  if (engine.currentState == PrayerState.selesai) {
+    return;
+  }
+
+  final isFirstQiyamOfSession =
+      engine.currentState == PrayerState.qiyam && engine.currentRakaat == 1;
+
+  if (cueResolver.needsTakbirTransition(engine.currentState) &&
+      !isFirstQiyamOfSession) {
+    audioService.play(NasynAudio.takbiratulIhram);
+    _audioCompleteSub = audioService.onComplete.listen((_) {
+      _audioCompleteSub?.cancel();
+      _playCueAndArmAdvance();
+    });
+  } else {
+    _playCueAndArmAdvance();
+  }
+}
+```
+
+(Only the `if` condition changes — `_playCueAndArmAdvance()` itself is
+unchanged from Task 7.)
+
+- [ ] **Step 4: Adjust tuma'ninah durations (+1 second each)**
+
+In the same file, change:
+
+```dart
+const Map<PrayerState, Duration> tumaninahDurations = {
+  PrayerState.rukuk: Duration(seconds: 3),
+  PrayerState.iktidal: Duration(seconds: 2),
+  PrayerState.sujud1: Duration(seconds: 3),
+  PrayerState.sujud2: Duration(seconds: 3),
+  PrayerState.dudukAntaraSujud: Duration(seconds: 2),
+};
+```
+
+to:
+
+```dart
+const Map<PrayerState, Duration> tumaninahDurations = {
+  PrayerState.rukuk: Duration(seconds: 4),
+  PrayerState.iktidal: Duration(seconds: 3),
+  PrayerState.sujud1: Duration(seconds: 4),
+  PrayerState.sujud2: Duration(seconds: 4),
+  PrayerState.dudukAntaraSujud: Duration(seconds: 3),
+};
+```
+
+- [ ] **Step 5: Update tests to match, using TDD**
+
+`nasyn_app/test/guided/guided_mode_controller_test.dart` has tests
+asserting specific `Duration` values (e.g. `async.elapse(const
+Duration(seconds: 2, milliseconds: 900))` before a rukuk transition) and
+tests exercising the very first Qiyam that would now behave differently
+(no takbir prefix needed there anymore). Run the suite first to see which
+assertions fail against Steps 3-4's changes, then update the affected
+`Duration` literals and takbir-related `completeCurrent()` call counts to
+match the corrected behavior — iterate for real rather than guessing the
+exact new numbers blind.
+
+Run: `flutter test test/guided/guided_mode_controller_test.dart` —
+iterate until all tests pass with the new durations and the corrected
+first-Qiyam-no-double-takbir behavior.
+
+- [ ] **Step 6: Full suite + build verification**
+
+```bash
+cd /home/astro/claude-project/NASYN-v-Claude/nasyn_app
+flutter analyze
+flutter test test/
+flutter build apk --debug
+```
+
+Expected: no analyzer errors, all tests passing, APK builds.
+
+- [ ] **Step 7: Commit**
+
+```bash
+cd /home/astro/claude-project/NASYN-v-Claude
+git add NASYN-v-Claude-assets/assets/audio/rukun nasyn_audio.dart nasyn_app/lib/audio/nasyn_audio.dart nasyn_app/lib/guided/guided_mode_controller.dart nasyn_app/test/guided/guided_mode_controller_test.dart
+git commit -m "Correct Task 7's inverted audio swap, fix double-takbir at session start, adjust tuma'ninah +1s"
+```
+
+(Do NOT `git add` anything under `nasyn_app/assets/audio/rukun/` for the
+renamed files — Bos already renamed them directly on disk outside of a
+prior commit's tracked history; check `git status` first and stage
+whatever `iktidal.mp3`/`tasbih-rukuk.mp3` changes show there, since they
+need to be committed too, just don't re-touch their content.)
+
+- [ ] **Step 8: Re-verify on device**
+
+Rebuild, push to `/sdcard/Download/`, ask Bos to reinstall via Files app
+(same MIUI sideload workaround as before), and ask them to confirm: only
+ONE takbir plays at the very start (not two back-to-back into the first
+Qiyam); rukuk position now plays the correct tasbih rukuk audio; iktidal
+plays the correct doa iktidal audio; the pause before advancing out of
+each fi'liy rukun feels noticeably longer (tuma'ninah +1s) without
+feeling sluggish.
+
+---
+
 ## Self-Review Notes
 
 - **Spec coverage:** Data model (§1) = Task 2. FSM (§2, including the BUG #1
