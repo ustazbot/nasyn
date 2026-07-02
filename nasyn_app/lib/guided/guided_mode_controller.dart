@@ -30,6 +30,7 @@ class GuidedModeController extends ChangeNotifier {
   };
   static const _variableReadingStates = {
     PrayerState.qiyam,
+    PrayerState.qunut, // bacaan panjang, ikut tempoh audio (bukan tuma'ninah)
     PrayerState.dudukTahiyatAwal,
     PrayerState.dudukTahiyatAkhir,
   };

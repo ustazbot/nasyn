@@ -69,6 +69,67 @@ void main() {
   });
 
   group('PrayerStateEngine - Subuh (2 rakaat, no tahiyat awal)', () {
+    test('rakaat 2 passes through qunut between iktidal and sujud1', () {
+      final engine = PrayerStateEngine(prayerConfigs[PrayerType.subuh]!);
+      final visited = <(PrayerState, int)>[];
+
+      while (!engine.isComplete) {
+        engine.advance();
+        visited.add((engine.currentState, engine.currentRakaat));
+      }
+
+      // Rakaat 1: iktidal terus ke sujud1, TIADA qunut.
+      final r1 = visited.where((v) => v.$2 == 1).map((v) => v.$1).toList();
+      final r1Iktidal = r1.indexOf(PrayerState.iktidal);
+      expect(r1[r1Iktidal + 1], PrayerState.sujud1,
+          reason: 'rakaat 1 mesti terus iktidal → sujud1');
+      expect(r1, isNot(contains(PrayerState.qunut)));
+
+      // Rakaat 2: iktidal → qunut → sujud1.
+      final r2 = visited.where((v) => v.$2 == 2).map((v) => v.$1).toList();
+      final r2Iktidal = r2.indexOf(PrayerState.iktidal);
+      expect(r2[r2Iktidal + 1], PrayerState.qunut,
+          reason: 'Subuh rakaat 2 mesti laluan qunut selepas iktidal');
+      expect(r2[r2Iktidal + 2], PrayerState.sujud1);
+    });
+
+    test('previous() is symmetric through qunut on rakaat 2', () {
+      final engine = PrayerStateEngine(prayerConfigs[PrayerType.subuh]!);
+      var transitions = 0;
+      while (!engine.isComplete) {
+        engine.advance();
+        transitions++;
+      }
+
+      for (var i = 0; i < transitions; i++) {
+        engine.previous();
+      }
+      expect(engine.currentState, PrayerState.takbiratulIhram);
+      expect(engine.currentRakaat, 1);
+    });
+
+    test('previous() from sujud1 on rakaat 2 returns to qunut, rakaat 1 to iktidal', () {
+      final engine = PrayerStateEngine(prayerConfigs[PrayerType.subuh]!);
+
+      // Rakaat 1: advance sampai sujud1, previous → iktidal.
+      while (engine.currentState != PrayerState.sujud1) {
+        engine.advance();
+      }
+      engine.previous();
+      expect(engine.currentState, PrayerState.iktidal);
+      engine.advance(); // balik ke sujud1
+
+      // Rakaat 2: advance sampai sujud1, previous → qunut.
+      while (!(engine.currentState == PrayerState.sujud1 &&
+          engine.currentRakaat == 2)) {
+        engine.advance();
+      }
+      engine.previous();
+      expect(engine.currentState, PrayerState.qunut);
+      engine.previous();
+      expect(engine.currentState, PrayerState.iktidal);
+    });
+
     test('never enters dudukTahiyatAwal', () {
       final engine = PrayerStateEngine(prayerConfigs[PrayerType.subuh]!);
       final visitedStates = <PrayerState>[];
@@ -81,6 +142,20 @@ void main() {
       expect(visitedStates, isNot(contains(PrayerState.dudukTahiyatAwal)));
       expect(visitedStates.last, PrayerState.selesai);
       expect(engine.currentRakaat, 2);
+    });
+  });
+
+  group('PrayerStateEngine - qunut hanya untuk solat qunutEligible', () {
+    test('Zuhur (qunutEligible: false) tidak pernah masuk qunut', () {
+      final engine = PrayerStateEngine(prayerConfigs[PrayerType.zuhur]!);
+      final visitedStates = <PrayerState>[];
+
+      while (!engine.isComplete) {
+        engine.advance();
+        visitedStates.add(engine.currentState);
+      }
+
+      expect(visitedStates, isNot(contains(PrayerState.qunut)));
     });
   });
 

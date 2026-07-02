@@ -21,6 +21,10 @@ class PrayerStateEngine {
 
   bool get isComplete => currentState == PrayerState.selesai;
 
+  /// Qunut dibaca selepas iktidal rakaat ke-2 untuk solat qunutEligible
+  /// (Subuh) — sebahagian aliran lalai, bukan toggle.
+  bool get _qunutHere => config.qunutEligible && currentRakaat == 2;
+
   /// Computes and applies the next state. No pose input — Guided Mode's
   /// sequence is fully determined by prayer type + current rakaat.
   void advance() {
@@ -30,11 +34,16 @@ class PrayerStateEngine {
         return;
       case PrayerState.qiyam:
       case PrayerState.rukuk:
-      case PrayerState.iktidal:
       case PrayerState.sujud1:
       case PrayerState.dudukAntaraSujud:
         currentState =
             _postureSequence[_postureSequence.indexOf(currentState) + 1];
+        return;
+      case PrayerState.iktidal:
+        currentState = _qunutHere ? PrayerState.qunut : PrayerState.sujud1;
+        return;
+      case PrayerState.qunut:
+        currentState = PrayerState.sujud1;
         return;
       case PrayerState.sujud2:
         _advanceFromSujud2();
@@ -88,6 +97,9 @@ class PrayerStateEngine {
         currentState = PrayerState.rukuk;
         return;
       case PrayerState.sujud1:
+        currentState = _qunutHere ? PrayerState.qunut : PrayerState.iktidal;
+        return;
+      case PrayerState.qunut:
         currentState = PrayerState.iktidal;
         return;
       case PrayerState.dudukAntaraSujud:

@@ -70,7 +70,7 @@ class NasynAudio {
   static const String tahiyatAwal = '${_rukun}tahiyat-awal.mp3';
   static const String tahiyatAkhir = '${_rukun}tahiyat-akhir.mp3';
   static const String salam = '${_rukun}salam.mp3';
-  static const String qunut = '${_rukun}qunut.mp3'; // Subuh sahaja (khilaf mazhab — default OFF, togglable di Tetapan)
+  static const String qunut = '${_rukun}qunut.mp3'; // Subuh sahaja — aliran lalai rakaat ke-2, selepas iktidal
 
   // ─── Nama Posisi Ringkas (Position Guide — Level 2) ───
   // BAHARU — tak wujud dalam manifest lama. Ini yang power-kan

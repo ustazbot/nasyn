@@ -8,6 +8,7 @@ class AudioCueResolver {
   static const Set<PrayerState> _noTakbirTransition = {
     PrayerState.takbiratulIhram, // it IS the opening takbir
     PrayerState.iktidal,          // uses its own "Sami'Allahu" cue instead
+    PrayerState.qunut,            // masih berdiri iktidal — tiada takbir
     PrayerState.salam,
     PrayerState.selesai,
   };
@@ -21,8 +22,8 @@ class AudioCueResolver {
 
   /// Returns the asset path to play for this state at this level, or null
   /// if nothing should play. [config] is accepted for future per-prayer
-  /// cues (e.g. qunut) — unused today, since qunut audio wiring is
-  /// deferred (design spec, Out of Scope).
+  /// cues — the qunut state itself only occurs when the FSM's config is
+  /// qunutEligible, so no config check is needed here.
   String? resolve(PrayerState state, AssistanceLevel level, PrayerConfig config) {
     if (state == PrayerState.iktidal) {
       return _checkPending(NasynAudio.bacaanIktidal);
@@ -78,6 +79,8 @@ class AudioCueResolver {
       case PrayerState.sujud1:
       case PrayerState.sujud2:
         return NasynAudio.bacaanSujud;
+      case PrayerState.qunut:
+        return NasynAudio.qunut;
       case PrayerState.dudukAntaraSujud:
         return NasynAudio.bacaanDudukAntaraSujud;
       case PrayerState.dudukTahiyatAwal:
