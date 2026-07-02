@@ -37,31 +37,26 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               onChanged: (level) => setState(() => _selectedLevel = level),
             ),
             Expanded(
-              child: SingleChildScrollView(
-                child: GridView.count(
-                  crossAxisCount: 2,
-                  childAspectRatio: 2.0,
-                  padding: const EdgeInsets.all(16),
-                  mainAxisSpacing: 16,
-                  crossAxisSpacing: 16,
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  children: PrayerType.values.map((type) {
-                    final config = prayerConfigs[type]!;
-                    return _SolatButton(
-                      config: config,
-                      locale: locale,
-                      onTap: () {
-                        Navigator.of(context).push(MaterialPageRoute(
-                          builder: (_) => PrayerSessionScreen(
-                            prayerType: type,
-                            level: _selectedLevel,
-                          ),
-                        ));
-                      },
-                    );
-                  }).toList(),
-                ),
+              child: GridView.count(
+                crossAxisCount: 2,
+                padding: const EdgeInsets.all(16),
+                mainAxisSpacing: 16,
+                crossAxisSpacing: 16,
+                children: PrayerType.values.map((type) {
+                  final config = prayerConfigs[type]!;
+                  return _SolatButton(
+                    config: config,
+                    locale: locale,
+                    onTap: () {
+                      Navigator.of(context).push(MaterialPageRoute(
+                        builder: (_) => PrayerSessionScreen(
+                          prayerType: type,
+                          level: _selectedLevel,
+                        ),
+                      ));
+                    },
+                  );
+                }).toList(),
               ),
             ),
             const AppBottomNav(),
