@@ -122,9 +122,34 @@ class _PrayerSessionScreenState extends ConsumerState<PrayerSessionScreen> {
               decoration: BoxDecoration(
                 border: Border.all(color: AppColors.lightText),
               ),
-              child: Text(
-                config.displayName.toUpperCase(),
-                style: AppTextStyles.display.copyWith(fontSize: 40),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      config.displayName.toUpperCase(),
+                      style: AppTextStyles.display.copyWith(fontSize: 40),
+                    ),
+                  ),
+                  // Toggle bahasa — dipindah dari bottom nav (icon kecil corner)
+                  GestureDetector(
+                    onTap: () {
+                      final current = ref.read(appLocaleProvider);
+                      ref.read(appLocaleProvider.notifier).state =
+                          current == AppLocale.bm ? AppLocale.en : AppLocale.bm;
+                    },
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Icons.language,
+                            color: AppColors.lightText, size: 28),
+                        Text(
+                          locale == AppLocale.bm ? 'BM' : 'EN',
+                          style: AppTextStyles.label.copyWith(fontSize: 16),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
               ),
             ),
             _RakaatPillRow(

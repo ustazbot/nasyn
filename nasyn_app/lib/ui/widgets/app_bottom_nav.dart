@@ -19,22 +19,6 @@ class AppBottomNav extends ConsumerWidget {
         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
         children: [
           GestureDetector(
-            onTap: () {
-              final current = ref.read(appLocaleProvider);
-              ref.read(appLocaleProvider.notifier).state =
-                  current == AppLocale.bm ? AppLocale.en : AppLocale.bm;
-            },
-            child: Column(
-              children: [
-                const Icon(Icons.language, color: AppColors.lightText),
-                Text(
-                  locale == AppLocale.bm ? 'BM/EN' : 'EN/BM',
-                  style: AppTextStyles.label,
-                ),
-              ],
-            ),
-          ),
-          GestureDetector(
             onTap: () => Navigator.of(context).popUntil((route) => route.isFirst),
             child: Column(
               children: [
