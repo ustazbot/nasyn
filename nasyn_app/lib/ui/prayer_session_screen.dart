@@ -59,7 +59,33 @@ class PrayerSessionScreen extends ConsumerStatefulWidget {
 
 class _PrayerSessionScreenState extends ConsumerState<PrayerSessionScreen> {
   bool _hasNavigated = false;
-  bool _recitationExpanded = false;
+
+  void _showRecitationSheet(String recitation) {
+    showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: AppColors.primaryTeal,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (_) => DraggableScrollableSheet(
+        expand: false,
+        initialChildSize: 0.5,
+        minChildSize: 0.3,
+        maxChildSize: 0.9,
+        builder: (context, scrollController) => SingleChildScrollView(
+          controller: scrollController,
+          padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 32),
+          child: Text(
+            recitation,
+            textAlign: TextAlign.center,
+            textDirection: TextDirection.rtl,
+            style: AppTextStyles.body,
+          ),
+        ),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -148,7 +174,9 @@ class _PrayerSessionScreenState extends ConsumerState<PrayerSessionScreen> {
               ),
             ),
             GestureDetector(
-              onTap: () => setState(() => _recitationExpanded = !_recitationExpanded),
+              onTap: recitation == null
+                  ? null
+                  : () => _showRecitationSheet(recitation),
               child: Container(
                 width: double.infinity,
                 margin: const EdgeInsets.all(16),
@@ -157,21 +185,10 @@ class _PrayerSessionScreenState extends ConsumerState<PrayerSessionScreen> {
                   color: Colors.white24,
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: Column(
-                  children: [
-                    Text(
-                      AppStrings.of('showRecitation', locale),
-                      style: AppTextStyles.label,
-                    ),
-                    if (_recitationExpanded && recitation != null) ...[
-                      const SizedBox(height: 12),
-                      Text(
-                        recitation,
-                        textAlign: TextAlign.center,
-                        style: AppTextStyles.body,
-                      ),
-                    ],
-                  ],
+                child: Text(
+                  AppStrings.of('showRecitation', locale),
+                  textAlign: TextAlign.center,
+                  style: AppTextStyles.label,
                 ),
               ),
             ),
