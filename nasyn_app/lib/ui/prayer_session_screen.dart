@@ -33,7 +33,7 @@ final guidedModeControllerProvider = ChangeNotifierProvider.autoDispose
 const Map<PrayerState, String> _postureIconAssets = {
   PrayerState.takbiratulIhram: 'assets/images/poses/qiyam.png',
   PrayerState.qiyam: 'assets/images/poses/qiyam.png',
-  PrayerState.salam: 'assets/images/poses/qiyam.png',
+  PrayerState.salam: 'assets/images/poses/duduk.png', // salam dibuat sambil duduk
   PrayerState.rukuk: 'assets/images/poses/ruku.png',
   PrayerState.sujud1: 'assets/images/poses/sujud.png',
   PrayerState.sujud2: 'assets/images/poses/sujud.png',
@@ -188,7 +188,10 @@ class _PrayerSessionScreenState extends ConsumerState<PrayerSessionScreen> {
                     Image.asset(iconAsset, height: 140, color: AppColors.lightText),
                   const SizedBox(height: 16),
                   Text(
-                    prayerStateLabelsBm[controller.currentState] ?? '',
+                    (locale == AppLocale.bm
+                            ? prayerStateLabelsBm
+                            : prayerStateLabelsEn)[controller.currentState] ??
+                        '',
                     style: AppTextStyles.display.copyWith(fontSize: 48),
                   ),
                   Text(
@@ -243,7 +246,7 @@ class _RakaatPillRow extends StatelessWidget {
               ? AppColors.accentGold
               : rakaatNumber == current
                   ? AppColors.primaryTeal
-                  : AppColors.primaryTeal.withValues(alpha: 0.25);
+                  : AppColors.surfaceMuted;
           return Expanded(
             child: Container(
               margin: const EdgeInsets.symmetric(horizontal: 4),
