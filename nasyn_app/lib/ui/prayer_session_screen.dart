@@ -196,15 +196,18 @@ class _RakaatPillRow extends StatelessWidget {
       child: Row(
         children: List.generate(total, (index) {
           final rakaatNumber = index + 1;
-          final isCurrent = rakaatNumber == current;
+          // 3-state: selesai (gold) / sedang (teal) / belum (teal pudar)
+          final color = rakaatNumber < current
+              ? AppColors.accentGold
+              : rakaatNumber == current
+                  ? AppColors.primaryTeal
+                  : AppColors.primaryTeal.withValues(alpha: 0.25);
           return Expanded(
             child: Container(
               margin: const EdgeInsets.symmetric(horizontal: 4),
               padding: const EdgeInsets.symmetric(vertical: 16),
               decoration: BoxDecoration(
-                color: isCurrent
-                    ? AppColors.primaryTeal
-                    : AppColors.primaryTeal.withOpacity(0.4),
+                color: color,
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Center(
