@@ -113,11 +113,19 @@ navigation from Fasa 1).
 Per Fasa 1's precedent (minimum/throwaway UI got no widget tests, but
 this is now the *real* UI, not throwaway) — this warrants light widget
 test coverage: one test per screen confirming it renders its key
-elements (Home shows the solat grid and mode toggle; Prayer Session
-shows the rakaat pills and posture icon; Summary shows the completion
-state; Boot auto-navigates after its timer). Not exhaustive golden-image
-testing — that's disproportionate for this phase — but enough to catch
-a screen failing to build at all.
+elements (Home shows the solat grid and mode toggle; Summary shows the
+completion state; Settings shows its stub message; Boot auto-navigates
+after its timer). Not exhaustive golden-image testing — that's
+disproportionate for this phase — but enough to catch a screen failing
+to build at all.
+
+**Exception: Prayer Session screen gets no widget test.** It constructs
+a real `GuidedModeController` backed by `AudioPlayerService`
+(`audioplayers`), which uses platform channels — the same reason Fasa 1
+never added widget tests touching that provider. Verified instead by
+`flutter analyze` + `flutter build apk --debug` succeeding, plus manual
+on-device verification (final task, same pattern as Fasa 1's device
+smoke tests).
 
 ## Out of Scope (explicitly)
 
