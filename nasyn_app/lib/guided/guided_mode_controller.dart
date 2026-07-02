@@ -10,11 +10,11 @@ import '../prayer/prayer_state.dart';
 import '../prayer/prayer_state_engine.dart';
 
 const Map<PrayerState, Duration> tumaninahDurations = {
-  PrayerState.rukuk: Duration(seconds: 3),
-  PrayerState.iktidal: Duration(seconds: 2),
-  PrayerState.sujud1: Duration(seconds: 3),
-  PrayerState.sujud2: Duration(seconds: 3),
-  PrayerState.dudukAntaraSujud: Duration(seconds: 2),
+  PrayerState.rukuk: Duration(seconds: 4),
+  PrayerState.iktidal: Duration(seconds: 3),
+  PrayerState.sujud1: Duration(seconds: 4),
+  PrayerState.sujud2: Duration(seconds: 4),
+  PrayerState.dudukAntaraSujud: Duration(seconds: 3),
 };
 
 class GuidedModeController extends ChangeNotifier {
@@ -60,7 +60,11 @@ class GuidedModeController extends ChangeNotifier {
       return;
     }
 
-    if (cueResolver.needsTakbirTransition(engine.currentState)) {
+    final isFirstQiyamOfSession =
+        engine.currentState == PrayerState.qiyam && engine.currentRakaat == 1;
+
+    if (cueResolver.needsTakbirTransition(engine.currentState) &&
+        !isFirstQiyamOfSession) {
       audioService.play(NasynAudio.takbiratulIhram);
       _audioCompleteSub = audioService.onComplete.listen((_) {
         _audioCompleteSub?.cancel();

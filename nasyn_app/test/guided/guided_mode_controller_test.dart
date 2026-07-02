@@ -37,8 +37,8 @@ void main() {
       audio.completeCurrent();
       async.flushMicrotasks();
 
-      // rukuk is fixed-posture, Takbir Only has no cue -> fixed 3s timer
-      async.elapse(const Duration(seconds: 2, milliseconds: 900));
+      // rukuk is fixed-posture, Takbir Only has no cue -> fixed 4s timer
+      async.elapse(const Duration(seconds: 3, milliseconds: 900));
       expect(controller.currentState, PrayerState.rukuk);
       async.elapse(const Duration(milliseconds: 200));
       expect(controller.currentState, PrayerState.iktidal);
@@ -59,10 +59,8 @@ void main() {
       async.flushMicrotasks();
       expect(controller.currentState, PrayerState.qiyam);
 
-      audio.completeCurrent(); // qiyam's takbir transition prefix finishes
-      async.flushMicrotasks();
-      expect(controller.currentState, PrayerState.qiyam);
-
+      // first Qiyam of the session gets no takbir prefix (it would double up
+      // with takbiratulIhram's own takbir) -> Al-Fatihah plays immediately
       audio.completeCurrent(); // Al-Fatihah finishes -> qiyam advances (Full Recite)
       async.flushMicrotasks();
       expect(controller.currentState, PrayerState.rukuk);
@@ -70,8 +68,8 @@ void main() {
       audio.completeCurrent(); // rukuk's takbir transition prefix finishes
       async.flushMicrotasks();
 
-      // rukuk: tuma'ninah 3s, audio not yet complete -> must NOT advance at 3s
-      async.elapse(const Duration(seconds: 3));
+      // rukuk: tuma'ninah 4s, audio not yet complete -> must NOT advance at 4s
+      async.elapse(const Duration(seconds: 4));
       expect(controller.currentState, PrayerState.rukuk);
 
       // audio finishes after tuma'ninah already elapsed -> advances now
@@ -102,7 +100,7 @@ void main() {
       controller.resume(); // re-enters rukuk -> re-arms its takbir transition prefix
       audio.completeCurrent(); // rukuk's takbir transition prefix finishes
       async.flushMicrotasks();
-      async.elapse(const Duration(seconds: 3));
+      async.elapse(const Duration(seconds: 4));
       expect(controller.currentState, PrayerState.iktidal);
     });
   });
@@ -139,8 +137,8 @@ void main() {
 
       audio.completeCurrent(); // takbiratulIhram -> qiyam
       async.flushMicrotasks();
-      audio.completeCurrent(); // qiyam's takbir transition prefix finishes
-      async.flushMicrotasks();
+      // first Qiyam of the session gets no takbir prefix (it would double up
+      // with takbiratulIhram's own takbir) -> Al-Fatihah plays immediately.
       expect(audio.lastPlayedPath, NasynAudio.alFatihah);
 
       audio.completeCurrent(); // Al-Fatihah finishes -> rukuk
@@ -154,7 +152,7 @@ void main() {
       expect(audio.lastPlayedPath, NasynAudio.bacaanRukuk);
 
       // rukuk (Full Recite, fixed-posture) advances on max(tuma'ninah, audio)
-      async.elapse(const Duration(seconds: 3));
+      async.elapse(const Duration(seconds: 4));
       audio.completeCurrent(); // rukuk's own cue finishes -> advance to iktidal
       async.flushMicrotasks();
       expect(controller.currentState, PrayerState.iktidal);
