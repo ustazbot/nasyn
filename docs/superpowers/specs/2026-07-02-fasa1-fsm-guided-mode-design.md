@@ -237,6 +237,21 @@ declared with the `assets/` prefix (matching pubspec style); `audioplayers`'
 `AssetSource` expects that prefix stripped, so `AudioPlayerService.play()`
 normalizes the path before use.
 
+## Known Follow-Up Required Before Fasa 2 (Kiosk)
+
+**Audio-completion watchdog.** Several `GuidedModeController` states (the
+takbir transition cue, Full-Recite variable-reading states, Salam with a
+cue) advance only on `AudioService.onComplete` firing, with no timeout. If
+an audio asset ever fails to load/play, the session silently stalls in
+that state. In Fasa 1 this is recoverable — the ⏪⏸⏩ walkthrough
+controls are always visible and a human is present. It becomes a real
+problem in Fasa 2's unattended kiosk mode, where no one is there to tap
+Next. Add a watchdog timeout (advance after `onComplete` OR N seconds,
+whichever comes first) for every `onComplete`-gated transition, and/or
+surface playback errors via an `AudioService.onError` stream, before
+kiosk work begins. Found during the final Fasa 1 whole-branch review
+(2026-07-02); Bos approved merging Fasa 1 without fixing it now.
+
 ## Out of Scope (explicitly)
 
 - Vision Mode / pose detection / camera (Fasa 3)
