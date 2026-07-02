@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NASYN Icon Preview</title>
+<style>
+  body { background: #1a1a1a; color: #fff; font-family: monospace; padding: 40px; }
+  h1 { margin-bottom: 20px; color: #FFB347; }
+  h2 { margin: 30px 0 10px; color: #ccc; }
+  .grid { display: flex; gap: 40px; flex-wrap: wrap; }
+  .icon-card { text-align: center; }
+  .icon-card svg { background: #fff; border-radius: 12px; padding: 8px; width: 200px; height: 200px; }
+  .icon-card .name { margin-top: 8px; font-size: 14px; color: #aaa; }
+  .icon-card .size { font-size: 12px; color: #666; }
+  .side-by-side { display: flex; gap: 30px; align-items: center; margin: 20px 0; }
+  .side-by-side svg { background: #fff; border-radius: 8px; padding: 4px; width: 100px; height: 100px; }
+</style>
+</head>
+<body>
+<h1>🕌 NASYN Prayer Icons — SVG Preview</h1>
+
+<div class="grid">
+  <div class="icon-card">
+    <div id="preview-qiyam"></div>
+    <div class="name">Qiyam (قيام)</div>
+    <div class="size" id="size-qiyam"></div>
+  </div>
+  <div class="icon-card">
+    <div id="preview-ruku"></div>
+    <div class="name">Ruku (ركوع)</div>
+    <div class="size" id="size-ruku"></div>
+  </div>
+  <div class="icon-card">
+    <div id="preview-sujud"></div>
+    <div class="name">Sujud (سجود)</div>
+    <div class="size" id="size-sujud"></div>
+  </div>
+  <div class="icon-card">
+    <div id="preview-duduk"></div>
+    <div class="name">Duduk (جلوس)</div>
+    <div class="size" id="size-duduk"></div>
+  </div>
+</div>
+
+<h2>Duduk — untuk 3 poses:</h2>
+<p style="color:#aaa; max-width:600px;">Icon duduk ni akan digunakan untuk 3 keadaan berbeza. Mungkin nak bezakan dengan orientation/detail?</p>
+
+<div class="side-by-side">
+  <div>
+    <div id="preview-duduk-2"></div>
+    <div style="color:#aaa;font-size:12px;text-align:center;margin-top:4px;">Duduk Antara 2 Sujud</div>
+  </div>
+  <div>
+    <div id="preview-duduk-3"></div>
+    <div style="color:#aaa;font-size:12px;text-align:center;margin-top:4px;">Tahiyat</div>
+  </div>
+  <div>
+    <div id="preview-duduk-4"></div>
+    <div style="color:#aaa;font-size:12px;text-align:center;margin-top:4px;">Salam (Berpaling)</div>
+  </div>
+</div>
+
+<script>
+async function loadSvg(id, url) {
+  const resp = await fetch(url);
+  const svgText = await resp.text();
+  document.getElementById(id).innerHTML = svgText;
+}
+
+// Load icons
+loadSvg('preview-qiyam', '../svg/qiyam.svg');
+loadSvg('preview-ruku', '../svg/ruku.svg');
+loadSvg('preview-sujud', '../svg/sujud.svg');
+loadSvg('preview-duduk', '../svg/duduk.svg');
+loadSvg('preview-duduk-2', '../svg/duduk.svg');
+loadSvg('preview-duduk-3', '../svg/duduk.svg');
+loadSvg('preview-duduk-4', '../svg/duduk.svg');
+
+// Show file sizes
+fetch('../svg/qiyam.svg').then(r=>r.text()).then(t=>document.getElementById('size-qiyam').textContent=(t.length/1024).toFixed(1)+' KB')
+fetch('../svg/ruku.svg').then(r=>r.text()).then(t=>document.getElementById('size-ruku').textContent=(t.length/1024).toFixed(1)+' KB')
+fetch('../svg/sujud.svg').then(r=>r.text()).then(t=>document.getElementById('size-sujud').textContent=(t.length/1024).toFixed(1)+' KB')
+fetch('../svg/duduk.svg').then(r=>r.text()).then(t=>document.getElementById('size-duduk').textContent=(t.length/1024).toFixed(1)+' KB')
+</script>
+</body>
+</html>

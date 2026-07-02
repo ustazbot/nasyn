@@ -5,3 +5,6 @@
 local.properties
 .idea/
 captures/
+
+# Duplicate archive of NASYN-Audio/ folder
+NASYN-Audio.zip
