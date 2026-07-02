@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'ui/home_screen.dart';
+import 'ui/boot_screen.dart';
 
 void main() {
   runApp(const ProviderScope(child: NasynApp()));
@@ -14,7 +14,8 @@ class NasynApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'NASYN',
-      home: const HomeScreen(),
+      theme: ThemeData.dark(),
+      home: const BootScreen(),
     );
   }
 }
