@@ -1484,6 +1484,290 @@ If no fix was needed, skip this step — nothing to commit.
 
 ---
 
+## Task 7: Fix audio-content mislabeling + add takbir transition cue
+
+> Added after the Task 6 device smoke test surfaced two real fiqh-accuracy
+> issues: (1) `bacaan-rukuk.mp3` and `bacaan-iktidal.mp3`'s actual recorded
+> content is swapped relative to their filenames, and (2) takbir (Allahu
+> Akbar) should play as a transition cue before every rukun change except
+> into Iktidal (which has its own "Sami'Allahu liman hamidah" cue), Salam,
+> and the terminal state — at all 3 assistance levels, not just as the
+> one-time opening takbir. Confirmed with Bos (2026-07-02) before implementing.
+
+**Files:**
+- Modify (rename, swap content): `NASYN-v-Claude-assets/assets/audio/rukun/bacaan-rukuk.mp3`, `NASYN-v-Claude-assets/assets/audio/rukun/bacaan-iktidal.mp3`
+- Modify (rename, swap content): `nasyn_app/assets/audio/rukun/bacaan-rukuk.mp3`, `nasyn_app/assets/audio/rukun/bacaan-iktidal.mp3`
+- Modify: `nasyn_app/lib/audio/audio_cue_resolver.dart`
+- Modify: `nasyn_app/lib/guided/guided_mode_controller.dart`
+- Modify: `nasyn_app/test/audio/audio_cue_resolver_test.dart`
+- Modify: `nasyn_app/test/guided/guided_mode_controller_test.dart`
+
+**Interfaces:**
+- Consumes: existing `PrayerState`, `AssistanceLevel`, `NasynAudio`, `AudioService`.
+- Produces: `AudioCueResolver` gains `bool needsTakbirTransition(PrayerState state)`; `resolve()` now always returns `NasynAudio.bacaanIktidal` for `PrayerState.iktidal` regardless of level; `GuidedModeController._enterState()` now plays a takbir prefix (when `needsTakbirTransition` is true) before resolving/playing the state's normal cue, and only arms auto-advance timers/listeners once the *final* cue in that chain is the one being tracked.
+
+- [ ] **Step 1: Swap the two mislabeled audio files (content, not just names)**
+
+The files are correctly named now but their recorded content was swapped
+during the original recording session — `bacaan-rukuk.mp3` currently
+contains the iktidal recitation and vice versa. Fix by swapping the files
+themselves so filename matches content, in both locations (the original
+asset source and the app's copy):
+
+```bash
+cd /home/astro/claude-project/NASYN-v-Claude
+for dir in NASYN-v-Claude-assets/assets/audio/rukun nasyn_app/assets/audio/rukun; do
+  mv "$dir/bacaan-rukuk.mp3" "$dir/bacaan-rukuk.mp3.tmp"
+  mv "$dir/bacaan-iktidal.mp3" "$dir/bacaan-rukuk.mp3"
+  mv "$dir/bacaan-rukuk.mp3.tmp" "$dir/bacaan-iktidal.mp3"
+done
+ls -la NASYN-v-Claude-assets/assets/audio/rukun/bacaan-rukuk.mp3 NASYN-v-Claude-assets/assets/audio/rukun/bacaan-iktidal.mp3
+ls -la nasyn_app/assets/audio/rukun/bacaan-rukuk.mp3 nasyn_app/assets/audio/rukun/bacaan-iktidal.mp3
+```
+
+Expected: file sizes are now swapped relative to before this step (verify
+against the sizes recorded at plan-writing time: `bacaan-iktidal.mp3` was
+112558 bytes, `bacaan-rukuk.mp3` was 61149 bytes — after the swap,
+`bacaan-rukuk.mp3` should be 112558 bytes and `bacaan-iktidal.mp3` should
+be 61149 bytes, in both directories).
+
+- [ ] **Step 2: Update `AudioCueResolver`**
+
+Read the current `nasyn_app/lib/audio/audio_cue_resolver.dart` first (it's
+from Task 3, unmodified since). Make these changes:
+
+1. Add a `needsTakbirTransition` method and the exclusion set:
+
+```dart
+static const Set<PrayerState> _noTakbirTransition = {
+  PrayerState.takbiratulIhram, // it IS the opening takbir
+  PrayerState.iktidal,          // uses its own "Sami'Allahu" cue instead
+  PrayerState.salam,
+  PrayerState.selesai,
+};
+
+/// Whether a takbir (Allahu Akbar) transition cue should play before this
+/// state's own cue. True for every rukun change except the opening
+/// takbir itself, Iktidal (has its own utterance), Salam, and the
+/// terminal state.
+bool needsTakbirTransition(PrayerState state) =>
+    !_noTakbirTransition.contains(state);
+```
+
+2. Change `resolve()` so `PrayerState.iktidal` always returns
+   `NasynAudio.bacaanIktidal`, at every assistance level (there is no
+   lighter "posisi"-only asset for iktidal, and Bos confirmed the full
+   cue should play even in Takbir Only for this state):
+
+```dart
+String? resolve(PrayerState state, AssistanceLevel level, PrayerConfig config) {
+  if (state == PrayerState.iktidal) {
+    return _checkPending(NasynAudio.bacaanIktidal);
+  }
+  final path = switch (level) {
+    AssistanceLevel.takbirOnly => _takbirOnlyCue(state),
+    AssistanceLevel.panduanPosisi => _panduanPosisiCue(state),
+    AssistanceLevel.fullRecite => _fullReciteCue(state),
+  };
+  return _checkPending(path);
+}
+
+String? _checkPending(String? path) {
+  if (path == null) return null;
+  if (NasynAudio.isPendingRecording(path)) return null;
+  return path;
+}
+```
+
+3. Remove the now-unreachable `PrayerState.iktidal` cases from
+   `_panduanPosisiCue` and `_fullReciteCue` (they fell through to
+   `default: return null` and `NasynAudio.bacaanIktidal` respectively
+   before — both are now handled by the special case above, so leaving
+   the old branches would be dead code).
+
+- [ ] **Step 3: Update `AudioCueResolver`'s tests (TDD — write these first, confirm they fail, then apply Step 2, confirm they pass)**
+
+Add to `nasyn_app/test/audio/audio_cue_resolver_test.dart`:
+
+```dart
+group('Iktidal (always plays the full cue, every level)', () {
+  test('plays bacaan-iktidal at every assistance level', () {
+    for (final level in AssistanceLevel.values) {
+      expect(
+        resolver.resolve(PrayerState.iktidal, level, zuhurConfig),
+        NasynAudio.bacaanIktidal,
+        reason: '$level should always resolve iktidal to the full cue',
+      );
+    }
+  });
+});
+
+group('needsTakbirTransition', () {
+  test('is false for takbiratulIhram, iktidal, salam, selesai', () {
+    expect(resolver.needsTakbirTransition(PrayerState.takbiratulIhram), isFalse);
+    expect(resolver.needsTakbirTransition(PrayerState.iktidal), isFalse);
+    expect(resolver.needsTakbirTransition(PrayerState.salam), isFalse);
+    expect(resolver.needsTakbirTransition(PrayerState.selesai), isFalse);
+  });
+
+  test('is true for every other state', () {
+    const otherStates = [
+      PrayerState.qiyam,
+      PrayerState.rukuk,
+      PrayerState.sujud1,
+      PrayerState.dudukAntaraSujud,
+      PrayerState.sujud2,
+      PrayerState.dudukTahiyatAwal,
+      PrayerState.dudukTahiyatAkhir,
+    ];
+    for (final state in otherStates) {
+      expect(resolver.needsTakbirTransition(state), isTrue, reason: '$state should get a takbir prefix');
+    }
+  });
+});
+```
+
+Run: `flutter test test/audio/audio_cue_resolver_test.dart` — expect FAIL
+before Step 2 (iktidal doesn't always return `bacaanIktidal` yet,
+`needsTakbirTransition` doesn't exist), then apply Step 2 and re-run —
+expect all tests (original 5 + these 2 new groups) to PASS.
+
+- [ ] **Step 4: Update `GuidedModeController._enterState()` to chain the takbir prefix**
+
+Read the current `nasyn_app/lib/guided/guided_mode_controller.dart` first
+(from Task 4, unmodified since). Restructure `_enterState()` so it plays
+the takbir prefix first (when `cueResolver.needsTakbirTransition(...)` is
+true) and only proceeds to the existing per-state-type advance logic
+(short-transition / variable-reading / fixed-posture) after the takbir
+finishes — or immediately, for states that don't need one:
+
+```dart
+void _enterState() {
+  _timer?.cancel();
+  _audioCompleteSub?.cancel();
+
+  if (engine.currentState == PrayerState.selesai) {
+    return;
+  }
+
+  if (cueResolver.needsTakbirTransition(engine.currentState)) {
+    audioService.play(NasynAudio.takbiratulIhram);
+    _audioCompleteSub = audioService.onComplete.listen((_) {
+      _audioCompleteSub?.cancel();
+      _playCueAndArmAdvance();
+    });
+  } else {
+    _playCueAndArmAdvance();
+  }
+}
+
+void _playCueAndArmAdvance() {
+  final cue = cueResolver.resolve(engine.currentState, level, engine.config);
+  if (cue != null) {
+    audioService.play(cue);
+  }
+
+  if (_shortTransitionStates.contains(engine.currentState)) {
+    if (cue != null) {
+      _audioCompleteSub = audioService.onComplete.listen((_) => _autoAdvance());
+    } else {
+      _timer = Timer(_shortTransitionDuration, _autoAdvance);
+    }
+    return;
+  }
+
+  if (_variableReadingStates.contains(engine.currentState)) {
+    final isFullRecite = level == AssistanceLevel.fullRecite;
+    if (isFullRecite && cue != null) {
+      _audioCompleteSub = audioService.onComplete.listen((_) => _autoAdvance());
+    }
+    return;
+  }
+
+  final tumaninah = tumaninahDurations[engine.currentState]!;
+  final isFullRecite = level == AssistanceLevel.fullRecite;
+  if (isFullRecite && cue != null) {
+    var tumaninahElapsed = false;
+    var audioCompleted = false;
+    _timer = Timer(tumaninah, () {
+      tumaninahElapsed = true;
+      if (audioCompleted) _autoAdvance();
+    });
+    _audioCompleteSub = audioService.onComplete.listen((_) {
+      audioCompleted = true;
+      if (tumaninahElapsed) _autoAdvance();
+    });
+  } else {
+    _timer = Timer(tumaninah, _autoAdvance);
+  }
+}
+```
+
+Note on why this is correct: `_shortTransitionStates` still only contains
+`{takbiratulIhram, salam}` — both of those states are also in
+`AudioCueResolver`'s `_noTakbirTransition` set, so they always skip
+straight to `_playCueAndArmAdvance()` and behave exactly as before (no
+prefix chain). Every other state now gets a takbir prefix chained ahead
+of its existing advance strategy. Iktidal is a fixed-posture state (has a
+`tumaninahDurations` entry) that now always has a non-null cue — for
+Takbir Only / Panduan Posisi levels this still falls to the plain
+`Timer(tumaninah, _autoAdvance)` branch (cue plays for the user's ear but
+doesn't gate timing, consistent with how every other non-Full-Recite
+fixed-posture state already behaves).
+
+- [ ] **Step 5: Update `GuidedModeController`'s tests using TDD**
+
+The existing 4 tests in `nasyn_app/test/guided/guided_mode_controller_test.dart`
+need updating: every transition into a non-excluded state now requires an
+extra `audio.completeCurrent()` (for the takbir prefix) before the
+state's own cue/timer logic engages. Rather than prescribing the exact
+sequence of `completeCurrent()`/`flushMicrotasks()`/`elapse()` calls here
+(Task 4 already hit a subtle fake_async + broadcast-stream timing issue
+that needed hands-on iteration), follow proper TDD: run the existing
+tests first to see them fail against the new `_enterState()` logic, then
+adjust each test's call sequence step by step, re-running after each
+change, until all 4 tests reflect the new chained behavior and pass. Add
+one new test specifically asserting that Iktidal plays its cue with no
+takbir prefix (unlike its neighbors Rukuk/Sujud), e.g. by checking
+`audio.lastPlayedPath` equals `NasynAudio.bacaanIktidal` immediately upon
+entering Iktidal in Full Recite, without needing a prior
+`completeCurrent()` call for a takbir.
+
+Run: `flutter test test/guided/guided_mode_controller_test.dart` — iterate
+until all tests (4 existing + 1 new) pass.
+
+- [ ] **Step 6: Full suite + build verification**
+
+```bash
+cd /home/astro/claude-project/NASYN-v-Claude/nasyn_app
+flutter analyze
+flutter test
+flutter build apk --debug
+```
+
+Expected: no analyzer errors, all tests passing (prior 18 + new additions
+from Steps 3 and 5), `Built build/app/outputs/flutter-apk/app-debug.apk`.
+
+- [ ] **Step 7: Commit**
+
+```bash
+cd /home/astro/claude-project/NASYN-v-Claude
+git add NASYN-v-Claude-assets/assets/audio/rukun/bacaan-rukuk.mp3 NASYN-v-Claude-assets/assets/audio/rukun/bacaan-iktidal.mp3 nasyn_app/assets/audio/rukun/bacaan-rukuk.mp3 nasyn_app/assets/audio/rukun/bacaan-iktidal.mp3 nasyn_app/lib/audio/audio_cue_resolver.dart nasyn_app/lib/guided/guided_mode_controller.dart nasyn_app/test/audio/audio_cue_resolver_test.dart nasyn_app/test/guided/guided_mode_controller_test.dart
+git commit -m "Fix swapped rukuk/iktidal audio content; add takbir transition cue before every rukun change"
+```
+
+- [ ] **Step 8: Re-verify on device**
+
+Rebuild and re-sideload per Task 6's process (push to
+`/sdcard/Download/`, ask Bos to reinstall via Files app), then ask Bos to
+re-run the Zuhur + Full Recite checklist from Task 6, specifically
+listening for: takbir plays before entering Rukuk/Sujud/Duduk/next
+Qiyam/Tahiyat; Iktidal plays "Sami'Allahu liman hamidah" (no takbir
+first); the recitation heard while in Rukuk position is now the rukuk
+tasbih (not the iktidal one).
+
+---
+
 ## Self-Review Notes
 
 - **Spec coverage:** Data model (§1) = Task 2. FSM (§2, including the BUG #1
