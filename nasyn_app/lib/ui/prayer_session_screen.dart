@@ -17,23 +17,25 @@ import '../theme/responsive.dart';
 import 'session_summary_screen.dart';
 
 final guidedModeControllerProvider = ChangeNotifierProvider.autoDispose
-    .family<GuidedModeController, ({PrayerType type, AssistanceLevel level})>(
-  (ref, args) {
-    final controller = GuidedModeController(
-      config: prayerConfigs[args.type]!,
-      level: args.level,
-      audioService: AudioPlayerService(),
-      cueResolver: AudioCueResolver(),
-    );
-    ref.onDispose(controller.dispose);
-    return controller;
-  },
-);
+    .family<GuidedModeController, ({PrayerType type, AssistanceLevel level})>((
+      ref,
+      args,
+    ) {
+      final controller = GuidedModeController(
+        config: prayerConfigs[args.type]!,
+        level: args.level,
+        audioService: AudioPlayerService(),
+        cueResolver: AudioCueResolver(),
+      );
+      ref.onDispose(controller.dispose);
+      return controller;
+    });
 
 const Map<PrayerState, String> _postureIconAssets = {
   PrayerState.takbiratulIhram: 'assets/images/poses/qiyam.png',
   PrayerState.qiyam: 'assets/images/poses/qiyam.png',
-  PrayerState.salam: 'assets/images/poses/duduk.png', // salam dibuat sambil duduk
+  PrayerState.salam:
+      'assets/images/poses/duduk.png', // salam dibuat sambil duduk
   PrayerState.rukuk: 'assets/images/poses/ruku.png',
   PrayerState.sujud1: 'assets/images/poses/sujud.png',
   PrayerState.sujud2: 'assets/images/poses/sujud.png',
@@ -61,8 +63,12 @@ class _PrayerSessionScreenState extends ConsumerState<PrayerSessionScreen> {
   bool _hasNavigated = false;
 
   Future<void> _confirmExit(AppLocale locale) async {
-    final controller = ref.read(guidedModeControllerProvider(
-        (type: widget.prayerType, level: widget.level)));
+    final controller = ref.read(
+      guidedModeControllerProvider((
+        type: widget.prayerType,
+        level: widget.level,
+      )),
+    );
     final wasPaused = controller.isPaused;
     if (!wasPaused) controller.pause();
 
@@ -77,15 +83,16 @@ class _PrayerSessionScreenState extends ConsumerState<PrayerSessionScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(false),
-            child: Text(AppStrings.of('batal', locale),
-                style: AppTextStyles.label),
+            child: Text(
+              AppStrings.of('batal', locale),
+              style: AppTextStyles.label,
+            ),
           ),
           TextButton(
             onPressed: () => Navigator.of(context).pop(true),
             child: Text(
               AppStrings.of('ya', locale),
-              style: AppTextStyles.label
-                  .copyWith(color: AppColors.errorRed),
+              style: AppTextStyles.label.copyWith(color: AppColors.errorRed),
             ),
           ),
         ],
@@ -138,12 +145,14 @@ class _PrayerSessionScreenState extends ConsumerState<PrayerSessionScreen> {
       _hasNavigated = true;
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (!mounted) return;
-        Navigator.of(context).pushReplacement(MaterialPageRoute(
-          builder: (_) => SessionSummaryScreen(
-            prayerType: widget.prayerType,
-            totalRakaat: config.rakaatCount,
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(
+            builder: (_) => SessionSummaryScreen(
+              prayerType: widget.prayerType,
+              totalRakaat: config.rakaatCount,
+            ),
           ),
-        ));
+        );
       });
     }
 
@@ -185,14 +194,19 @@ class _PrayerSessionScreenState extends ConsumerState<PrayerSessionScreen> {
                           current == AppLocale.bm ? AppLocale.en : AppLocale.bm;
                     },
                     child: ConstrainedBox(
-                      constraints:
-                          const BoxConstraints(minWidth: 48, minHeight: 48),
+                      constraints: const BoxConstraints(
+                        minWidth: 48,
+                        minHeight: 48,
+                      ),
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          const Icon(Icons.language,
-                              color: AppColors.lightText, size: 28),
+                          const Icon(
+                            Icons.language,
+                            color: AppColors.lightText,
+                            size: 28,
+                          ),
                           Text(
                             locale == AppLocale.bm ? 'BM' : 'EN',
                             style: AppTextStyles.label.copyWith(fontSize: 16),
@@ -209,8 +223,11 @@ class _PrayerSessionScreenState extends ConsumerState<PrayerSessionScreen> {
                     child: const SizedBox(
                       width: 48,
                       height: 48,
-                      child: Icon(Icons.close,
-                          color: AppColors.lightText, size: 28),
+                      child: Icon(
+                        Icons.close,
+                        color: AppColors.lightText,
+                        size: 28,
+                      ),
                     ),
                   ),
                 ],
@@ -220,29 +237,53 @@ class _PrayerSessionScreenState extends ConsumerState<PrayerSessionScreen> {
               total: config.rakaatCount,
               current: controller.currentRakaat,
             ),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: [
-                IconButton(
-                  iconSize: 48,
-                  icon: const Icon(Icons.fast_rewind, color: AppColors.lightText),
-                  onPressed: controller.back,
-                ),
-                IconButton(
-                  iconSize: 48,
-                  icon: Icon(
-                    controller.isPaused ? Icons.play_arrow : Icons.pause,
-                    color: AppColors.lightText,
+            // Kontrol walkthrough dalam satu pill gelap; Pause/Play circle hijau
+            Container(
+              margin: const EdgeInsets.symmetric(horizontal: 48),
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+              decoration: BoxDecoration(
+                color: AppColors.surfaceMuted,
+                borderRadius: BorderRadius.circular(48),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: [
+                  IconButton(
+                    iconSize: 40,
+                    icon: const Icon(
+                      Icons.fast_rewind,
+                      color: AppColors.lightText,
+                    ),
+                    onPressed: controller.back,
                   ),
-                  onPressed:
-                      controller.isPaused ? controller.resume : controller.pause,
-                ),
-                IconButton(
-                  iconSize: 48,
-                  icon: const Icon(Icons.fast_forward, color: AppColors.lightText),
-                  onPressed: controller.next,
-                ),
-              ],
+                  GestureDetector(
+                    onTap: controller.isPaused
+                        ? controller.resume
+                        : controller.pause,
+                    child: Container(
+                      width: 64,
+                      height: 64,
+                      decoration: const BoxDecoration(
+                        color: AppColors.accentGreen,
+                        shape: BoxShape.circle,
+                      ),
+                      child: Icon(
+                        controller.isPaused ? Icons.play_arrow : Icons.pause,
+                        color: AppColors.darkBg,
+                        size: 36,
+                      ),
+                    ),
+                  ),
+                  IconButton(
+                    iconSize: 40,
+                    icon: const Icon(
+                      Icons.fast_forward,
+                      color: AppColors.lightText,
+                    ),
+                    onPressed: controller.next,
+                  ),
+                ],
+              ),
             ),
             Expanded(
               child: Column(
@@ -252,7 +293,21 @@ class _PrayerSessionScreenState extends ConsumerState<PrayerSessionScreen> {
                   // 2 Julai 2026, bina hanya jika pilot feedback tunjuk
                   // Takbir Only mode rasa "stuck"
                   if (iconAsset != null)
-                    Image.asset(iconAsset, height: 140, color: AppColors.lightText),
+                    Container(
+                      width: 132,
+                      height: 132,
+                      decoration: const BoxDecoration(
+                        color: AppColors.surfaceMuted,
+                        shape: BoxShape.circle,
+                      ),
+                      child: Center(
+                        child: Image.asset(
+                          iconAsset,
+                          height: 96,
+                          color: AppColors.lightText,
+                        ),
+                      ),
+                    ),
                   const SizedBox(height: 16),
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -261,8 +316,8 @@ class _PrayerSessionScreenState extends ConsumerState<PrayerSessionScreen> {
                       child: Text(
                         (locale == AppLocale.bm
                                 ? prayerStateLabelsBm
-                                : prayerStateLabelsEn)[
-                                controller.currentState] ??
+                                : prayerStateLabelsEn)[controller
+                                .currentState] ??
                             '',
                         textAlign: TextAlign.center,
                         style: AppTextStyles.display.copyWith(
@@ -283,22 +338,35 @@ class _PrayerSessionScreenState extends ConsumerState<PrayerSessionScreen> {
                 ],
               ),
             ),
+            // Trigger bacaan — pill compact dengan icon buku
             GestureDetector(
               onTap: recitation == null
                   ? null
                   : () => _showRecitationSheet(recitation),
               child: Container(
-                width: double.infinity,
-                margin: const EdgeInsets.all(16),
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: Colors.white24,
-                  borderRadius: BorderRadius.circular(12),
+                margin: const EdgeInsets.all(12),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 20,
+                  vertical: 10,
                 ),
-                child: Text(
-                  AppStrings.of('showRecitation', locale),
-                  textAlign: TextAlign.center,
-                  style: AppTextStyles.label,
+                decoration: BoxDecoration(
+                  color: AppColors.surfaceMuted,
+                  borderRadius: BorderRadius.circular(24),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(
+                      Icons.menu_book,
+                      color: AppColors.lightText,
+                      size: 22,
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      AppStrings.of('showRecitation', locale),
+                      style: AppTextStyles.label,
+                    ),
+                  ],
                 ),
               ),
             ),
@@ -323,11 +391,12 @@ class _RakaatPillRow extends StatelessWidget {
         children: List.generate(total, (index) {
           final rakaatNumber = index + 1;
           // 3-state: selesai (gold) / sedang (teal) / belum (teal pudar)
+          final isCurrent = rakaatNumber == current;
           final color = rakaatNumber < current
               ? AppColors.accentGold
-              : rakaatNumber == current
-                  ? AppColors.primaryTeal
-                  : AppColors.surfaceMuted;
+              : isCurrent
+              ? AppColors.primaryTeal
+              : AppColors.surfaceMuted;
           return Expanded(
             child: Container(
               margin: const EdgeInsets.symmetric(horizontal: 4),
@@ -335,6 +404,10 @@ class _RakaatPillRow extends StatelessWidget {
               decoration: BoxDecoration(
                 color: color,
                 borderRadius: BorderRadius.circular(8),
+                // Border terang extra distinction untuk rakaat sedang
+                border: isCurrent
+                    ? Border.all(color: AppColors.accentGreen, width: 1.5)
+                    : null,
               ),
               child: Center(
                 child: Text(
