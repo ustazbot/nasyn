@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 
 import '../audio/audio_cue_resolver.dart';
 import '../audio/audio_service.dart';
+import '../audio/nasyn_audio.dart';
 import '../prayer/prayer_config.dart';
 import '../prayer/prayer_state.dart';
 import '../prayer/prayer_state_engine.dart';
@@ -59,6 +60,18 @@ class GuidedModeController extends ChangeNotifier {
       return;
     }
 
+    if (cueResolver.needsTakbirTransition(engine.currentState)) {
+      audioService.play(NasynAudio.takbiratulIhram);
+      _audioCompleteSub = audioService.onComplete.listen((_) {
+        _audioCompleteSub?.cancel();
+        _playCueAndArmAdvance();
+      });
+    } else {
+      _playCueAndArmAdvance();
+    }
+  }
+
+  void _playCueAndArmAdvance() {
     final cue = cueResolver.resolve(engine.currentState, level, engine.config);
     if (cue != null) {
       audioService.play(cue);

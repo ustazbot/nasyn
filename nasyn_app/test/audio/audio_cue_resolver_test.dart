@@ -78,6 +78,42 @@ void main() {
     });
   });
 
+  group('Iktidal (always plays the full cue, every level)', () {
+    test('plays bacaan-iktidal at every assistance level', () {
+      for (final level in AssistanceLevel.values) {
+        expect(
+          resolver.resolve(PrayerState.iktidal, level, zuhurConfig),
+          NasynAudio.bacaanIktidal,
+          reason: '$level should always resolve iktidal to the full cue',
+        );
+      }
+    });
+  });
+
+  group('needsTakbirTransition', () {
+    test('is false for takbiratulIhram, iktidal, salam, selesai', () {
+      expect(resolver.needsTakbirTransition(PrayerState.takbiratulIhram), isFalse);
+      expect(resolver.needsTakbirTransition(PrayerState.iktidal), isFalse);
+      expect(resolver.needsTakbirTransition(PrayerState.salam), isFalse);
+      expect(resolver.needsTakbirTransition(PrayerState.selesai), isFalse);
+    });
+
+    test('is true for every other state', () {
+      const otherStates = [
+        PrayerState.qiyam,
+        PrayerState.rukuk,
+        PrayerState.sujud1,
+        PrayerState.dudukAntaraSujud,
+        PrayerState.sujud2,
+        PrayerState.dudukTahiyatAwal,
+        PrayerState.dudukTahiyatAkhir,
+      ];
+      for (final state in otherStates) {
+        expect(resolver.needsTakbirTransition(state), isTrue, reason: '$state should get a takbir prefix');
+      }
+    });
+  });
+
   test('never resolves to a not-yet-recorded asset for any state/level combination', () {
     for (final state in PrayerState.values) {
       for (final level in AssistanceLevel.values) {
