@@ -24,9 +24,10 @@ void main() {
       async.flushMicrotasks();
       expect(controller.currentState, PrayerState.qiyam);
 
-      // entering qiyam plays a takbir transition prefix first; qiyam itself
-      // (variable-reading, Takbir Only has no cue) waits for manual Next
-      // regardless of whether that prefix ever completes
+      // rakaat-1 qiyam is the first Qiyam of the session, so it gets no
+      // takbir transition prefix (it would double up with takbiratulIhram's
+      // own takbir); qiyam itself (variable-reading, Takbir Only has no cue)
+      // waits for manual Next regardless.
       async.elapse(const Duration(seconds: 10));
       expect(controller.currentState, PrayerState.qiyam);
       controller.next();
@@ -160,6 +161,68 @@ void main() {
       // Iktidal is excluded from the takbir prefix -- its own cue plays
       // immediately upon entry, with no completeCurrent() needed for a takbir.
       expect(audio.lastPlayedPath, NasynAudio.bacaanIktidal);
+    });
+  });
+
+  test('Takbir Only: rakaat-2 Qiyam (Subuh) still gets its takbir prefix, unlike rakaat 1', () {
+    fakeAsync((async) {
+      final audio = FakeAudioService();
+      final controller = GuidedModeController(
+        config: prayerConfigs[PrayerType.subuh]!,
+        level: AssistanceLevel.takbirOnly,
+        audioService: audio,
+        cueResolver: AudioCueResolver(),
+      );
+
+      // takbiratulIhram IS the opening takbir (no prefix) -> advances on audio complete
+      audio.completeCurrent();
+      async.flushMicrotasks();
+      expect(controller.currentState, PrayerState.qiyam);
+      expect(controller.currentRakaat, 1);
+
+      // rakaat-1 qiyam is the first Qiyam of the session -> no takbir prefix
+      // (Takbir Only has no cue for qiyam either) -> manual Next only.
+      controller.next();
+      expect(controller.currentState, PrayerState.rukuk);
+
+      // rukuk's takbir transition prefix must finish before its own
+      // (Takbir-Only-has-no-cue) fixed 4s tuma'ninah timer is armed.
+      audio.completeCurrent();
+      async.flushMicrotasks();
+      async.elapse(const Duration(seconds: 4));
+      expect(controller.currentState, PrayerState.iktidal);
+
+      // Iktidal is excluded from the takbir prefix; its own cue (bacaanIktidal)
+      // always plays regardless of level, but Takbir Only ignores audio
+      // completion and just waits out the fixed 3s tuma'ninah timer.
+      async.elapse(const Duration(seconds: 3));
+      expect(controller.currentState, PrayerState.sujud1);
+
+      // sujud1's takbir transition prefix, then its fixed 4s tuma'ninah timer.
+      audio.completeCurrent();
+      async.flushMicrotasks();
+      async.elapse(const Duration(seconds: 4));
+      expect(controller.currentState, PrayerState.dudukAntaraSujud);
+
+      // dudukAntaraSujud's takbir transition prefix, then its fixed 3s timer.
+      audio.completeCurrent();
+      async.flushMicrotasks();
+      async.elapse(const Duration(seconds: 3));
+      expect(controller.currentState, PrayerState.sujud2);
+
+      // sujud2's takbir transition prefix, then its fixed 4s timer. Subuh has
+      // no tahiyat awal, so advancing from rakaat-1 sujud2 goes straight to
+      // rakaat-2 qiyam -- the shortest path to a non-first-Qiyam entry.
+      audio.completeCurrent();
+      async.flushMicrotasks();
+      async.elapse(const Duration(seconds: 4));
+      expect(controller.currentState, PrayerState.qiyam);
+      expect(controller.currentRakaat, 2);
+
+      // Unlike rakaat 1's qiyam, this rakaat-2 qiyam is NOT the first Qiyam of
+      // the session, so isFirstQiyamOfSession does not suppress its takbir
+      // transition prefix: it plays immediately upon entry.
+      expect(audio.lastPlayedPath, NasynAudio.takbiratulIhram);
     });
   });
 }
