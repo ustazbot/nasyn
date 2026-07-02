@@ -8,6 +8,7 @@ import '../audio/nasyn_audio.dart';
 import '../prayer/prayer_config.dart';
 import '../prayer/prayer_state.dart';
 import '../prayer/prayer_state_engine.dart';
+import '../settings/timing_profile.dart';
 
 const Map<PrayerState, Duration> tumaninahDurations = {
   PrayerState.rukuk: Duration(seconds: 4),
@@ -44,12 +45,18 @@ class GuidedModeController extends ChangeNotifier {
   int get currentRakaat => engine.currentRakaat;
   bool get isComplete => engine.isComplete;
 
+  /// Timing dari Settings; clamped() jamin tak bawah floor
+  /// tumaninahDurations walau apa pun nilai masuk.
+  final TimingProfile _timing;
+
   GuidedModeController({
     required PrayerConfig config,
     required this.level,
     required this.audioService,
     required this.cueResolver,
-  }) : engine = PrayerStateEngine(config) {
+    TimingProfile? timing,
+  })  : engine = PrayerStateEngine(config),
+        _timing = (timing ?? TimingProfile.defaults).clamped() {
     _enterState();
   }
 
@@ -100,8 +107,10 @@ class GuidedModeController extends ChangeNotifier {
       return;
     }
 
-    // Fixed-posture states.
-    final tumaninah = tumaninahDurations[engine.currentState]!;
+    // Fixed-posture states. Profile Settings menang, floor tetap
+    // tumaninahDurations (clamp dalam TimingProfile).
+    final tumaninah = _timing.tumaninahFor(engine.currentState) ??
+        tumaninahDurations[engine.currentState]!;
     final isFullRecite = level == AssistanceLevel.fullRecite;
     if (isFullRecite && cue != null) {
       var tumaninahElapsed = false;

@@ -12,6 +12,7 @@ import '../prayer/prayer_config.dart';
 import '../prayer/prayer_recitation_text.dart';
 import '../prayer/prayer_state.dart';
 import '../prayer/prayer_state_labels.dart';
+import '../settings/settings_providers.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_text_styles.dart';
 import '../theme/responsive.dart';
@@ -27,6 +28,7 @@ final guidedModeControllerProvider = ChangeNotifierProvider.autoDispose
         level: args.level,
         audioService: AudioPlayerService(),
         cueResolver: AudioCueResolver(),
+        timing: ref.read(timingProfileProvider),
       );
       ref.onDispose(controller.dispose);
       return controller;
@@ -197,8 +199,14 @@ class _PrayerSessionScreenState extends ConsumerState<PrayerSessionScreen> {
                     behavior: HitTestBehavior.opaque,
                     onTap: () {
                       final current = ref.read(appLocaleProvider);
-                      ref.read(appLocaleProvider.notifier).state =
-                          current == AppLocale.bm ? AppLocale.en : AppLocale.bm;
+                      final next = current == AppLocale.bm
+                          ? AppLocale.en
+                          : AppLocale.bm;
+                      ref.read(appLocaleProvider.notifier).state = next;
+                      // Best-effort persist (repo tiada dalam widget test).
+                      try {
+                        ref.read(settingsRepositoryProvider).saveLocale(next);
+                      } catch (_) {}
                     },
                     child: ConstrainedBox(
                       constraints: const BoxConstraints(

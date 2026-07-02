@@ -1,10 +1,26 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'i18n/app_locale.dart';
+import 'settings/settings_providers.dart';
+import 'settings/settings_repository.dart';
 import 'ui/boot_screen.dart';
 
-void main() {
-  runApp(const ProviderScope(child: NasynApp()));
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  final repo = await SettingsRepository.load();
+  runApp(
+    ProviderScope(
+      overrides: [
+        settingsRepositoryProvider.overrideWithValue(repo),
+        timingProfileProvider
+            .overrideWith((ref) => repo.readTimingProfile()),
+        alertModeProvider.overrideWith((ref) => repo.readAlertMode()),
+        appLocaleProvider.overrideWith((ref) => repo.readLocale()),
+      ],
+      child: const NasynApp(),
+    ),
+  );
 }
 
 class NasynApp extends StatelessWidget {
