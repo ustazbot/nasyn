@@ -5,9 +5,16 @@ import 'package:flutter_riverpod/legacy.dart';
 import '../audio/audio_cue_resolver.dart';
 import '../audio/audio_player_service.dart';
 import '../guided/guided_mode_controller.dart';
+import '../i18n/app_locale.dart';
+import '../i18n/app_strings.dart';
 import '../prayer/prayer_config.dart';
+import '../prayer/prayer_recitation_text.dart';
+import '../prayer/prayer_state.dart';
 import '../prayer/prayer_state_labels.dart';
+import '../theme/app_colors.dart';
+import '../theme/app_text_styles.dart';
 import 'session_summary_screen.dart';
+import 'widgets/app_bottom_nav.dart';
 
 final guidedModeControllerProvider = ChangeNotifierProvider.autoDispose
     .family<GuidedModeController, ({PrayerType type, AssistanceLevel level})>(
@@ -23,6 +30,18 @@ final guidedModeControllerProvider = ChangeNotifierProvider.autoDispose
   },
 );
 
+const Map<PrayerState, String> _postureIconAssets = {
+  PrayerState.takbiratulIhram: 'assets/images/poses/qiyam.png',
+  PrayerState.qiyam: 'assets/images/poses/qiyam.png',
+  PrayerState.salam: 'assets/images/poses/qiyam.png',
+  PrayerState.rukuk: 'assets/images/poses/ruku.png',
+  PrayerState.sujud1: 'assets/images/poses/sujud.png',
+  PrayerState.sujud2: 'assets/images/poses/sujud.png',
+  PrayerState.dudukAntaraSujud: 'assets/images/poses/duduk.png',
+  PrayerState.dudukTahiyatAwal: 'assets/images/poses/duduk.png',
+  PrayerState.dudukTahiyatAkhir: 'assets/images/poses/duduk.png',
+};
+
 class PrayerSessionScreen extends ConsumerStatefulWidget {
   final PrayerType prayerType;
   final AssistanceLevel level;
@@ -34,16 +53,19 @@ class PrayerSessionScreen extends ConsumerStatefulWidget {
   });
 
   @override
-  ConsumerState<PrayerSessionScreen> createState() => _PrayerSessionScreenState();
+  ConsumerState<PrayerSessionScreen> createState() =>
+      _PrayerSessionScreenState();
 }
 
 class _PrayerSessionScreenState extends ConsumerState<PrayerSessionScreen> {
   bool _hasNavigated = false;
+  bool _recitationExpanded = false;
 
   @override
   Widget build(BuildContext context) {
     final args = (type: widget.prayerType, level: widget.level);
     final controller = ref.watch(guidedModeControllerProvider(args));
+    final locale = ref.watch(appLocaleProvider);
     final config = prayerConfigs[widget.prayerType]!;
 
     if (controller.isComplete && !_hasNavigated) {
@@ -59,36 +81,141 @@ class _PrayerSessionScreenState extends ConsumerState<PrayerSessionScreen> {
       });
     }
 
+    final iconAsset = _postureIconAssets[controller.currentState];
+    final recitation = prayerRecitationText[controller.currentState];
+
     return Scaffold(
-      appBar: AppBar(title: Text(config.displayName)),
-      body: Center(
+      backgroundColor: AppColors.darkBg,
+      body: SafeArea(
         child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Text('Rakaat ${controller.currentRakaat} / ${config.rakaatCount}'),
-            const SizedBox(height: 16),
-            Text(prayerStateLabelsBm[controller.currentState] ?? ''),
-            Text(prayerStateLabelsArabic[controller.currentState] ?? ''),
-            const SizedBox(height: 32),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(16),
+              margin: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                border: Border.all(color: AppColors.lightText),
+              ),
+              child: Text(
+                config.displayName.toUpperCase(),
+                style: AppTextStyles.display.copyWith(fontSize: 40),
+              ),
+            ),
+            _RakaatPillRow(
+              total: config.rakaatCount,
+              current: controller.currentRakaat,
+            ),
             Row(
-              mainAxisAlignment: MainAxisAlignment.center,
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
                 IconButton(
-                  icon: const Icon(Icons.fast_rewind),
+                  iconSize: 48,
+                  icon: const Icon(Icons.fast_rewind, color: AppColors.lightText),
                   onPressed: controller.back,
                 ),
                 IconButton(
-                  icon: Icon(controller.isPaused ? Icons.play_arrow : Icons.pause),
-                  onPressed: controller.isPaused ? controller.resume : controller.pause,
+                  iconSize: 48,
+                  icon: Icon(
+                    controller.isPaused ? Icons.play_arrow : Icons.pause,
+                    color: AppColors.lightText,
+                  ),
+                  onPressed:
+                      controller.isPaused ? controller.resume : controller.pause,
                 ),
                 IconButton(
-                  icon: const Icon(Icons.fast_forward),
+                  iconSize: 48,
+                  icon: const Icon(Icons.fast_forward, color: AppColors.lightText),
                   onPressed: controller.next,
                 ),
               ],
             ),
+            Expanded(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  if (iconAsset != null)
+                    Image.asset(iconAsset, height: 140, color: AppColors.lightText),
+                  const SizedBox(height: 16),
+                  Text(
+                    prayerStateLabelsBm[controller.currentState] ?? '',
+                    style: AppTextStyles.display.copyWith(fontSize: 48),
+                  ),
+                  Text(
+                    prayerStateLabelsArabic[controller.currentState] ?? '',
+                    style: AppTextStyles.body,
+                  ),
+                ],
+              ),
+            ),
+            GestureDetector(
+              onTap: () => setState(() => _recitationExpanded = !_recitationExpanded),
+              child: Container(
+                width: double.infinity,
+                margin: const EdgeInsets.all(16),
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.white24,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Column(
+                  children: [
+                    Text(
+                      AppStrings.of('showRecitation', locale),
+                      style: AppTextStyles.label,
+                    ),
+                    if (_recitationExpanded && recitation != null) ...[
+                      const SizedBox(height: 12),
+                      Text(
+                        recitation,
+                        textAlign: TextAlign.center,
+                        style: AppTextStyles.body,
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+            ),
+            const AppBottomNav(),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class _RakaatPillRow extends StatelessWidget {
+  final int total;
+  final int current;
+
+  const _RakaatPillRow({required this.total, required this.current});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      child: Row(
+        children: List.generate(total, (index) {
+          final rakaatNumber = index + 1;
+          final isCurrent = rakaatNumber == current;
+          return Expanded(
+            child: Container(
+              margin: const EdgeInsets.symmetric(horizontal: 4),
+              padding: const EdgeInsets.symmetric(vertical: 16),
+              decoration: BoxDecoration(
+                color: isCurrent
+                    ? AppColors.primaryTeal
+                    : AppColors.primaryTeal.withOpacity(0.4),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Center(
+                child: Text(
+                  '$rakaatNumber',
+                  style: AppTextStyles.display.copyWith(fontSize: 32),
+                ),
+              ),
+            ),
+          );
+        }),
       ),
     );
   }
