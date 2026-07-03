@@ -1,7 +1,7 @@
 /// Audio asset paths for NASYN.
 ///
 /// Semua audio adalah pre-recorded MP3.
-/// - Quran: Al-Husary (set utama, 23 surah) / Al-Misyari (alt, 8 surah)
+/// - Quran: Muhammad Jibreel (set utama, 23 surah) / Al-Misyari (alt, 8 surah)
 /// - Bacaan rukun & posisi: Rakaman sendiri (Bos)
 ///
 /// STATUS D-004: APPROVED. Pemilik produk memiliki kelulusan syariah &
@@ -17,36 +17,38 @@ import '../prayer/prayer_config.dart';
 class NasynAudio {
   NasynAudio._();
 
-  static const String _quranHusary = 'assets/audio/quran/al-husary/';
+  static const String _quranJibreel = 'assets/audio/quran/muhammad-jibreel/';
   static const String _quranMisyari = 'assets/audio/quran/al-misyari/';
   static const String _rukun = 'assets/audio/rukun/';
   static const String _posisi = 'assets/audio/posisi/';
 
-  // ─── Quran — Al-Husary (set utama) ───
+  // ─── Quran — Muhammad Jibreel (set utama) ───
+  // Nama fail ikut set Jibreel (Ash-Sharh, Quraysh, Al-Kawthar, Al-Masad);
+  // identifier Dart kekal nama lama supaya call site tak berubah.
 
-  static const String alFatihah = '${_quranHusary}001-Al-Fatihah.mp3';
-  static const String adDhuha = '${_quranHusary}093-Ad-Dhuha.mp3';
-  static const String alInshirah = '${_quranHusary}094-Al-Inshirah.mp3';
-  static const String atTin = '${_quranHusary}095-At-Tin.mp3';
-  static const String alAlaq = '${_quranHusary}096-Al-Alaq.mp3';
-  static const String alQadr = '${_quranHusary}097-Al-Qadr.mp3';
-  static const String alBayyinah = '${_quranHusary}098-Al-Bayyinah.mp3';
-  static const String azZalzalah = '${_quranHusary}099-Az-Zalzalah.mp3';
-  static const String alAdiyat = '${_quranHusary}100-Al-Adiyat.mp3';
-  static const String alQariah = '${_quranHusary}101-Al-Qariah.mp3';
-  static const String atTakathur = '${_quranHusary}102-At-Takathur.mp3';
-  static const String alAsr = '${_quranHusary}103-Al-Asr.mp3';
-  static const String alHumazah = '${_quranHusary}104-Al-Humazah.mp3';
-  static const String alFil = '${_quranHusary}105-Al-Fil.mp3';
-  static const String quraish = '${_quranHusary}106-Quraish.mp3';
-  static const String alMaun = '${_quranHusary}107-Al-Maun.mp3';
-  static const String alKautsar = '${_quranHusary}108-Al-Kautsar.mp3';
-  static const String alKafirun = '${_quranHusary}109-Al-Kafirun.mp3';
-  static const String anNasr = '${_quranHusary}110-An-Nasr.mp3';
-  static const String alLahab = '${_quranHusary}111-Al-Lahab.mp3';
-  static const String alIkhlas = '${_quranHusary}112-Al-Ikhlas.mp3';
-  static const String alFalaq = '${_quranHusary}113-Al-Falaq.mp3';
-  static const String anNas = '${_quranHusary}114-An-Nas.mp3';
+  static const String alFatihah = '${_quranJibreel}001-Al-Fatihah.mp3';
+  static const String adDhuha = '${_quranJibreel}093-Ad-Dhuha.mp3';
+  static const String alInshirah = '${_quranJibreel}094-Ash-Sharh.mp3';
+  static const String atTin = '${_quranJibreel}095-At-Tin.mp3';
+  static const String alAlaq = '${_quranJibreel}096-Al-Alaq.mp3';
+  static const String alQadr = '${_quranJibreel}097-Al-Qadr.mp3';
+  static const String alBayyinah = '${_quranJibreel}098-Al-Bayyinah.mp3';
+  static const String azZalzalah = '${_quranJibreel}099-Az-Zalzalah.mp3';
+  static const String alAdiyat = '${_quranJibreel}100-Al-Adiyat.mp3';
+  static const String alQariah = '${_quranJibreel}101-Al-Qariah.mp3';
+  static const String atTakathur = '${_quranJibreel}102-At-Takathur.mp3';
+  static const String alAsr = '${_quranJibreel}103-Al-Asr.mp3';
+  static const String alHumazah = '${_quranJibreel}104-Al-Humazah.mp3';
+  static const String alFil = '${_quranJibreel}105-Al-Fil.mp3';
+  static const String quraish = '${_quranJibreel}106-Quraysh.mp3';
+  static const String alMaun = '${_quranJibreel}107-Al-Maun.mp3';
+  static const String alKautsar = '${_quranJibreel}108-Al-Kawthar.mp3';
+  static const String alKafirun = '${_quranJibreel}109-Al-Kafirun.mp3';
+  static const String anNasr = '${_quranJibreel}110-An-Nasr.mp3';
+  static const String alLahab = '${_quranJibreel}111-Al-Masad.mp3';
+  static const String alIkhlas = '${_quranJibreel}112-Al-Ikhlas.mp3';
+  static const String alFalaq = '${_quranJibreel}113-Al-Falaq.mp3';
+  static const String anNas = '${_quranJibreel}114-An-Nas.mp3';
 
   /// Senarai penuh surah pendek untuk pemilihan (lepas Al-Fatihah)
   static const List<String> surahPendek = [

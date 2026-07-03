@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:nasyn_app/audio/audio_cue_resolver.dart';
 import 'package:nasyn_app/audio/nasyn_audio.dart';
@@ -202,6 +204,13 @@ void main() {
         expect(resolver.needsTakbirTransition(state), isTrue, reason: '$state should get a takbir prefix');
       }
     });
+  });
+
+  test('semua fail Fatihah & surah pendek wujud dalam assets (kunci drift nama fail bila tukar qari)', () {
+    for (final path in [NasynAudio.alFatihah, ...NasynAudio.surahPendek]) {
+      expect(File(path).existsSync(), isTrue,
+          reason: 'fail tak wujud: $path');
+    }
   });
 
   test('never resolves to a not-yet-recorded asset for any state/level combination', () {
