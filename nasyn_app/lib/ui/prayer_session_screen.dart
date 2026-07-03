@@ -8,8 +8,7 @@ import '../audio/nasyn_audio.dart';
 import '../guided/guided_mode_controller.dart';
 import '../i18n/app_locale.dart';
 import '../i18n/app_strings.dart';
-import '../kiosk/kiosk_service.dart';
-import '../kiosk/session_wakelock.dart';
+import '../kiosk/session_guard.dart';
 import '../prayer/prayer_config.dart';
 import '../prayer/prayer_recitation_text.dart';
 import '../prayer/prayer_state.dart';
@@ -35,7 +34,8 @@ final guidedModeControllerProvider = ChangeNotifierProvider.autoDispose
         surahRakaat1: ref.read(surahRakaat1Provider),
         surahRakaat2: ref.read(surahRakaat2Provider),
       );
-      ref.onDispose(controller.dispose);
+      // JANGAN ref.onDispose(controller.dispose) — ChangeNotifierProvider
+      // auto-dispose notifier; manual dispose = double-dispose assert.
       return controller;
     });
 
@@ -109,10 +109,9 @@ class _PrayerSessionScreenState extends ConsumerState<PrayerSessionScreen> {
 
     if (!mounted) return;
     if (exit == true) {
-      // PENTING: unpin + lepas wakelock SEBELUM keluar — jangan tinggal
-      // user ter-pin atau skrin ter-ON.
-      await KioskService.stopPinning();
-      await SessionWakelock.disable();
+      // PENTING: lepas semua guard SEBELUM keluar — jangan tinggal user
+      // ter-pin, skrin ter-ON, atau nav bar tersembunyi.
+      await SessionGuard.release();
       if (!mounted) return;
       Navigator.of(context).popUntil((route) => route.isFirst);
     } else if (!wasPaused) {
@@ -157,11 +156,10 @@ class _PrayerSessionScreenState extends ConsumerState<PrayerSessionScreen> {
     if (controller.isComplete && !_hasNavigated) {
       _hasNavigated = true;
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        // Solat selesai natural — unpin + lepas wakelock; tak perlu tunggu
+        // Solat selesai natural — lepas semua guard; tak perlu tunggu
         // sebab Summary masih dalam app sendiri (fire-and-forget elak
         // async gap).
-        KioskService.stopPinning();
-        SessionWakelock.disable();
+        SessionGuard.release();
         if (!mounted) return;
         Navigator.of(context).pushReplacement(
           MaterialPageRoute(
@@ -177,224 +175,235 @@ class _PrayerSessionScreenState extends ConsumerState<PrayerSessionScreen> {
     final iconAsset = _postureIconAssets[controller.currentState];
     final recitation = prayerRecitationText[controller.currentState];
 
-    return Scaffold(
-      backgroundColor: AppColors.darkBg,
-      body: SafeArea(
-        child: Column(
-          children: [
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(16),
-              margin: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                border: Border.all(color: AppColors.lightText),
-              ),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: FittedBox(
-                      fit: BoxFit.scaleDown,
-                      alignment: Alignment.centerLeft,
-                      child: Text(
-                        config.displayName.toUpperCase(),
-                        style: AppTextStyles.display.copyWith(
-                          fontSize: 40 * Responsive.scale(context),
-                        ),
-                      ),
-                    ),
-                  ),
-                  // Toggle bahasa — dipindah dari bottom nav (icon kecil corner)
-                  GestureDetector(
-                    behavior: HitTestBehavior.opaque,
-                    onTap: () {
-                      final current = ref.read(appLocaleProvider);
-                      final next = current == AppLocale.bm
-                          ? AppLocale.en
-                          : AppLocale.bm;
-                      ref.read(appLocaleProvider.notifier).state = next;
-                      // Best-effort persist (repo tiada dalam widget test).
-                      try {
-                        ref.read(settingsRepositoryProvider).saveLocale(next);
-                      } catch (_) {}
-                    },
-                    child: ConstrainedBox(
-                      constraints: const BoxConstraints(
-                        minWidth: 48,
-                        minHeight: 48,
-                      ),
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          const Icon(
-                            Icons.language,
-                            color: AppColors.lightText,
-                            size: 28,
-                          ),
-                          Text(
-                            locale == AppLocale.bm ? 'BM' : 'EN',
-                            style: AppTextStyles.label.copyWith(fontSize: 16),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  // Exit sesi — visual kecil, tap target kekal 48x48dp
-                  GestureDetector(
-                    behavior: HitTestBehavior.opaque,
-                    onTap: () => _confirmExit(locale),
-                    child: const SizedBox(
-                      width: 48,
-                      height: 48,
-                      child: Icon(
-                        Icons.close,
-                        color: AppColors.lightText,
-                        size: 28,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            _RakaatPillRow(
-              total: config.rakaatCount,
-              current: controller.currentRakaat,
-            ),
-            // Kontrol walkthrough dalam satu pill gelap; Pause/Play circle hijau
-            Container(
-              margin: const EdgeInsets.symmetric(horizontal: 48),
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
-              decoration: BoxDecoration(
-                color: AppColors.surfaceMuted,
-                borderRadius: BorderRadius.circular(48),
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: [
-                  IconButton(
-                    iconSize: 40,
-                    icon: const Icon(
-                      Icons.fast_rewind,
-                      color: AppColors.lightText,
-                    ),
-                    onPressed: controller.back,
-                  ),
-                  GestureDetector(
-                    onTap: controller.isPaused
-                        ? controller.resume
-                        : controller.pause,
-                    child: Container(
-                      width: 64,
-                      height: 64,
-                      decoration: const BoxDecoration(
-                        color: AppColors.accentGreen,
-                        shape: BoxShape.circle,
-                      ),
-                      child: Icon(
-                        controller.isPaused ? Icons.play_arrow : Icons.pause,
-                        color: AppColors.darkBg,
-                        size: 36,
-                      ),
-                    ),
-                  ),
-                  IconButton(
-                    iconSize: 40,
-                    icon: const Icon(
-                      Icons.fast_forward,
-                      color: AppColors.lightText,
-                    ),
-                    onPressed: controller.next,
-                  ),
-                ],
-              ),
-            ),
-            Expanded(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  // BACKLOG: ring progress indicator — rujuk design session
-                  // 2 Julai 2026, bina hanya jika pilot feedback tunjuk
-                  // Takbir Only mode rasa "stuck"
-                  if (iconAsset != null)
-                    Container(
-                      width: 132,
-                      height: 132,
-                      decoration: const BoxDecoration(
-                        color: AppColors.surfaceMuted,
-                        shape: BoxShape.circle,
-                      ),
-                      child: Center(
-                        child: Image.asset(
-                          iconAsset,
-                          height: 96,
-                          color: AppColors.lightText,
-                        ),
-                      ),
-                    ),
-                  const SizedBox(height: 16),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    child: FittedBox(
-                      fit: BoxFit.scaleDown,
-                      child: Text(
-                        (locale == AppLocale.bm
-                                ? prayerStateLabelsBm
-                                : prayerStateLabelsEn)[controller
-                                .currentState] ??
-                            '',
-                        textAlign: TextAlign.center,
-                        style: AppTextStyles.display.copyWith(
-                          fontSize: 48 * Responsive.scale(context),
-                        ),
-                      ),
-                    ),
-                  ),
-                  FittedBox(
-                    fit: BoxFit.scaleDown,
-                    child: Text(
-                      prayerStateLabelsArabic[controller.currentState] ?? '',
-                      style: AppTextStyles.body.copyWith(
-                        fontSize: 36 * Responsive.scale(context),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            // Trigger bacaan — pill compact dengan icon buku
-            GestureDetector(
-              onTap: recitation == null
-                  ? null
-                  : () => _showRecitationSheet(recitation),
-              child: Container(
-                margin: const EdgeInsets.all(12),
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 20,
-                  vertical: 10,
-                ),
+    // Back sistem TIDAK boleh terus keluar dari solat — mesti lalu
+    // dialog confirm yang sama dengan butang X (guard release di situ).
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop) _confirmExit(locale);
+      },
+      child: Scaffold(
+        backgroundColor: AppColors.darkBg,
+        body: SafeArea(
+          child: Column(
+            children: [
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(16),
+                margin: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: AppColors.surfaceMuted,
-                  borderRadius: BorderRadius.circular(24),
+                  border: Border.all(color: AppColors.lightText),
                 ),
                 child: Row(
-                  mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Icon(
-                      Icons.menu_book,
-                      color: AppColors.lightText,
-                      size: 22,
+                    Expanded(
+                      child: FittedBox(
+                        fit: BoxFit.scaleDown,
+                        alignment: Alignment.centerLeft,
+                        child: Text(
+                          config.displayName.toUpperCase(),
+                          style: AppTextStyles.display.copyWith(
+                            fontSize: 40 * Responsive.scale(context),
+                          ),
+                        ),
+                      ),
+                    ),
+                    // Toggle bahasa — dipindah dari bottom nav (icon kecil corner)
+                    GestureDetector(
+                      behavior: HitTestBehavior.opaque,
+                      onTap: () {
+                        final current = ref.read(appLocaleProvider);
+                        final next = current == AppLocale.bm
+                            ? AppLocale.en
+                            : AppLocale.bm;
+                        ref.read(appLocaleProvider.notifier).state = next;
+                        // Best-effort persist (repo tiada dalam widget test).
+                        try {
+                          ref.read(settingsRepositoryProvider).saveLocale(next);
+                        } catch (_) {}
+                      },
+                      child: ConstrainedBox(
+                        constraints: const BoxConstraints(
+                          minWidth: 48,
+                          minHeight: 48,
+                        ),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            const Icon(
+                              Icons.language,
+                              color: AppColors.lightText,
+                              size: 28,
+                            ),
+                            Text(
+                              locale == AppLocale.bm ? 'BM' : 'EN',
+                              style: AppTextStyles.label.copyWith(fontSize: 16),
+                            ),
+                          ],
+                        ),
+                      ),
                     ),
                     const SizedBox(width: 8),
-                    Text(
-                      AppStrings.of('showRecitation', locale),
-                      style: AppTextStyles.label,
+                    // Exit sesi — visual kecil, tap target kekal 48x48dp
+                    GestureDetector(
+                      behavior: HitTestBehavior.opaque,
+                      onTap: () => _confirmExit(locale),
+                      child: const SizedBox(
+                        width: 48,
+                        height: 48,
+                        child: Icon(
+                          Icons.close,
+                          color: AppColors.lightText,
+                          size: 28,
+                        ),
+                      ),
                     ),
                   ],
                 ),
               ),
-            ),
-          ],
+              _RakaatPillRow(
+                total: config.rakaatCount,
+                current: controller.currentRakaat,
+              ),
+              // Kontrol walkthrough dalam satu pill gelap; Pause/Play circle hijau
+              Container(
+                margin: const EdgeInsets.symmetric(horizontal: 48),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 24,
+                  vertical: 8,
+                ),
+                decoration: BoxDecoration(
+                  color: AppColors.surfaceMuted,
+                  borderRadius: BorderRadius.circular(48),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: [
+                    IconButton(
+                      iconSize: 40,
+                      icon: const Icon(
+                        Icons.fast_rewind,
+                        color: AppColors.lightText,
+                      ),
+                      onPressed: controller.back,
+                    ),
+                    GestureDetector(
+                      onTap: controller.isPaused
+                          ? controller.resume
+                          : controller.pause,
+                      child: Container(
+                        width: 64,
+                        height: 64,
+                        decoration: const BoxDecoration(
+                          color: AppColors.accentGreen,
+                          shape: BoxShape.circle,
+                        ),
+                        child: Icon(
+                          controller.isPaused ? Icons.play_arrow : Icons.pause,
+                          color: AppColors.darkBg,
+                          size: 36,
+                        ),
+                      ),
+                    ),
+                    IconButton(
+                      iconSize: 40,
+                      icon: const Icon(
+                        Icons.fast_forward,
+                        color: AppColors.lightText,
+                      ),
+                      onPressed: controller.next,
+                    ),
+                  ],
+                ),
+              ),
+              Expanded(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    // BACKLOG: ring progress indicator — rujuk design session
+                    // 2 Julai 2026, bina hanya jika pilot feedback tunjuk
+                    // Takbir Only mode rasa "stuck"
+                    if (iconAsset != null)
+                      Container(
+                        width: 132,
+                        height: 132,
+                        decoration: const BoxDecoration(
+                          color: AppColors.surfaceMuted,
+                          shape: BoxShape.circle,
+                        ),
+                        child: Center(
+                          child: Image.asset(
+                            iconAsset,
+                            height: 96,
+                            color: AppColors.lightText,
+                          ),
+                        ),
+                      ),
+                    const SizedBox(height: 16),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      child: FittedBox(
+                        fit: BoxFit.scaleDown,
+                        child: Text(
+                          (locale == AppLocale.bm
+                                  ? prayerStateLabelsBm
+                                  : prayerStateLabelsEn)[controller
+                                  .currentState] ??
+                              '',
+                          textAlign: TextAlign.center,
+                          style: AppTextStyles.display.copyWith(
+                            fontSize: 48 * Responsive.scale(context),
+                          ),
+                        ),
+                      ),
+                    ),
+                    FittedBox(
+                      fit: BoxFit.scaleDown,
+                      child: Text(
+                        prayerStateLabelsArabic[controller.currentState] ?? '',
+                        style: AppTextStyles.body.copyWith(
+                          fontSize: 36 * Responsive.scale(context),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              // Trigger bacaan — pill compact dengan icon buku
+              GestureDetector(
+                onTap: recitation == null
+                    ? null
+                    : () => _showRecitationSheet(recitation),
+                child: Container(
+                  margin: const EdgeInsets.all(12),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 20,
+                    vertical: 10,
+                  ),
+                  decoration: BoxDecoration(
+                    color: AppColors.surfaceMuted,
+                    borderRadius: BorderRadius.circular(24),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(
+                        Icons.menu_book,
+                        color: AppColors.lightText,
+                        size: 22,
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        AppStrings.of('showRecitation', locale),
+                        style: AppTextStyles.label,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
