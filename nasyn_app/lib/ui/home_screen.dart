@@ -322,7 +322,11 @@ class _AssistanceSpectrum extends StatelessWidget {
               child: GestureDetector(
                 onTap: () => onChanged(level),
                 child: Container(
-                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  margin: const EdgeInsets.symmetric(horizontal: 2),
+                  padding: const EdgeInsets.symmetric(
+                    vertical: 12,
+                    horizontal: 8,
+                  ),
                   decoration: BoxDecoration(
                     color: isSelected
                         ? AppColors.accentGold
