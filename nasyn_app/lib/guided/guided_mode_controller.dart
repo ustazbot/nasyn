@@ -56,15 +56,29 @@ class GuidedModeController extends ChangeNotifier {
       state: _timing.tumaninahFor(state)!,
   };
 
+  /// Audio niat — pre-session cue, BUKAN PrayerState. Dimain sekali di
+  /// permulaan sesi; FSM mula hanya selepas audio habis (gate onComplete,
+  /// bukan fixed timer — elak niat terputus atau jeda janggal).
+  final String? niatCue;
+
   GuidedModeController({
     required PrayerConfig config,
     required this.level,
     required this.audioService,
     required this.cueResolver,
     TimingProfile? timing,
+    this.niatCue,
   })  : engine = PrayerStateEngine(config),
         _timing = (timing ?? TimingProfile.defaults).clamped() {
-    _enterState();
+    if (niatCue != null && !NasynAudio.isPendingRecording(niatCue!)) {
+      audioService.play(niatCue!);
+      _audioCompleteSub = audioService.onComplete.listen((_) {
+        _audioCompleteSub?.cancel();
+        _enterState();
+      });
+    } else {
+      _enterState();
+    }
   }
 
   void _enterState() {

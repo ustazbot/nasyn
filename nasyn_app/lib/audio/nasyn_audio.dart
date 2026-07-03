@@ -10,6 +10,10 @@
 /// tanpa blocking gate untuk bacaan rukun (folder `rukun/`).
 ///
 /// Format penamaan: kebab-case, Bahasa Melayu.
+library;
+
+import '../prayer/prayer_config.dart';
+
 class NasynAudio {
   NasynAudio._();
 
@@ -76,6 +80,25 @@ class NasynAudio {
   static const String doaIftitah = '${_rukun}doa-iftitah.mp3';
   static const String bismillah = '${_rukun}bismillah.mp3';
 
+  // ─── Niat Solat (pre-session cue — dimainkan SEKALI sebelum FSM mula) ───
+  // Bukan PrayerState; dimain di permulaan sesi, takbir menyusul selepas
+  // audio habis (gate onComplete, bukan fixed timer).
+
+  static const String niatSubuh = '${_rukun}niat-subuh.mp3';
+  static const String niatZuhur = '${_rukun}niat-zuhur.mp3';
+  static const String niatAsar = '${_rukun}niat-asar.mp3';
+  static const String niatMaghrib = '${_rukun}niat-maghrib.mp3';
+  static const String niatIsyak = '${_rukun}niat-isyak.mp3';
+
+  /// Niat ikut solat fardu; sunat tiada rakaman niat — sesi terus mula.
+  static const Map<PrayerType, String> niatBySolat = {
+    PrayerType.subuh: niatSubuh,
+    PrayerType.zuhur: niatZuhur,
+    PrayerType.asar: niatAsar,
+    PrayerType.maghrib: niatMaghrib,
+    PrayerType.isyak: niatIsyak,
+  };
+
   // ─── Nama Posisi Ringkas (Position Guide — Level 2) ───
   // BAHARU — tak wujud dalam manifest lama. Ini yang power-kan
   // "Panduan Posisi" dalam spektrum Takbir-only ↔ Full-recite.
@@ -110,6 +133,11 @@ class NasynAudio {
     tahiyatAkhir,
     salam,
     qunut,
+    niatSubuh,
+    niatZuhur,
+    niatAsar,
+    niatMaghrib,
+    niatIsyak,
   ];
 
   static bool isPendingRecording(String path) => needRecording.contains(path);

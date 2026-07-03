@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/legacy.dart';
 
 import '../audio/audio_cue_resolver.dart';
 import '../audio/audio_player_service.dart';
+import '../audio/nasyn_audio.dart';
 import '../guided/guided_mode_controller.dart';
 import '../i18n/app_locale.dart';
 import '../i18n/app_strings.dart';
@@ -29,6 +30,7 @@ final guidedModeControllerProvider = ChangeNotifierProvider.autoDispose
         audioService: AudioPlayerService(),
         cueResolver: AudioCueResolver(),
         timing: ref.read(timingProfileProvider),
+        niatCue: NasynAudio.niatBySolat[args.type],
       );
       ref.onDispose(controller.dispose);
       return controller;

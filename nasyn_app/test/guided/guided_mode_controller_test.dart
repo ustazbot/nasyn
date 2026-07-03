@@ -225,4 +225,66 @@ void main() {
       expect(audio.lastPlayedPath, NasynAudio.takbiratulIhram);
     });
   });
+
+  test('niatCue: main niat dulu, FSM mula selepas audio niat habis', () {
+    fakeAsync((async) {
+      final audio = FakeAudioService();
+      final controller = GuidedModeController(
+        config: prayerConfigs[PrayerType.subuh]!,
+        level: AssistanceLevel.takbirOnly,
+        audioService: audio,
+        cueResolver: AudioCueResolver(),
+        niatCue: NasynAudio.niatBySolat[PrayerType.subuh],
+      );
+
+      // Niat sedang main — takbir BELUM main, gate onComplete bukan timer.
+      expect(audio.lastPlayedPath, NasynAudio.niatSubuh);
+      async.elapse(const Duration(seconds: 30));
+      expect(controller.currentState, PrayerState.takbiratulIhram);
+      expect(audio.lastPlayedPath, NasynAudio.niatSubuh);
+
+      // Niat habis → terus takbiratul ihram tanpa jeda.
+      audio.completeCurrent();
+      async.flushMicrotasks();
+      expect(audio.lastPlayedPath, NasynAudio.takbiratulIhram);
+
+      // Takbir habis → qiyam, aliran biasa sambung.
+      audio.completeCurrent();
+      async.flushMicrotasks();
+      expect(controller.currentState, PrayerState.qiyam);
+    });
+  });
+
+  test('niatCue null (sunat): FSM mula terus macam sebelum', () {
+    fakeAsync((async) {
+      final audio = FakeAudioService();
+      final controller = GuidedModeController(
+        config: prayerConfigs[PrayerType.sunat]!,
+        level: AssistanceLevel.takbirOnly,
+        audioService: audio,
+        cueResolver: AudioCueResolver(),
+        niatCue: NasynAudio.niatBySolat[PrayerType.sunat],
+      );
+
+      expect(audio.lastPlayedPath, NasynAudio.takbiratulIhram);
+      audio.completeCurrent();
+      async.flushMicrotasks();
+      expect(controller.currentState, PrayerState.qiyam);
+    });
+  });
+
+  test('niatBySolat lengkap untuk 5 solat fardu', () {
+    for (final type in [
+      PrayerType.subuh,
+      PrayerType.zuhur,
+      PrayerType.asar,
+      PrayerType.maghrib,
+      PrayerType.isyak,
+    ]) {
+      expect(NasynAudio.niatBySolat[type], isNotNull);
+      expect(NasynAudio.isPendingRecording(NasynAudio.niatBySolat[type]!),
+          isFalse);
+    }
+    expect(NasynAudio.niatBySolat[PrayerType.sunat], isNull);
+  });
 }
