@@ -120,14 +120,15 @@ class MainActivity : AppCompatActivity(), PoseLandmarkerHelper.Listener {
                 poseLandmarkerHelper?.detectAsync(
                     bitmap = bitmap,
                     rotationDegrees = rotationDegrees,
-                    isFrontCamera = false,
+                    isFrontCamera = true,
                     frameTimeMs = frameTimeMs,
                 )
             }
 
-            // Spike v2 (§8.13): kamera BELAKANG, mounting rendah dekat
-            // sejadah menghala atas ke arah pengguna
-            val cameraSelector = CameraSelector.DEFAULT_BACK_CAMERA
+            // Spike v2 (§8.13): kamera depan gaya "video-call" — phone
+            // diletak RENDAH dekat sejadah, skrin+lens menghala atas ke
+            // arah pengguna (bukan paras dada macam spike v1)
+            val cameraSelector = CameraSelector.DEFAULT_FRONT_CAMERA
 
             cameraProvider.unbindAll()
             cameraProvider.bindToLifecycle(this, cameraSelector, preview, imageAnalysis)
