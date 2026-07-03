@@ -9,6 +9,7 @@ import '../guided/guided_mode_controller.dart';
 import '../i18n/app_locale.dart';
 import '../i18n/app_strings.dart';
 import '../kiosk/kiosk_service.dart';
+import '../kiosk/session_wakelock.dart';
 import '../prayer/prayer_config.dart';
 import '../prayer/prayer_recitation_text.dart';
 import '../prayer/prayer_state.dart';
@@ -108,8 +109,10 @@ class _PrayerSessionScreenState extends ConsumerState<PrayerSessionScreen> {
 
     if (!mounted) return;
     if (exit == true) {
-      // PENTING: unpin SEBELUM keluar — jangan tinggal user ter-pin.
+      // PENTING: unpin + lepas wakelock SEBELUM keluar — jangan tinggal
+      // user ter-pin atau skrin ter-ON.
       await KioskService.stopPinning();
+      await SessionWakelock.disable();
       if (!mounted) return;
       Navigator.of(context).popUntil((route) => route.isFirst);
     } else if (!wasPaused) {
@@ -154,9 +157,11 @@ class _PrayerSessionScreenState extends ConsumerState<PrayerSessionScreen> {
     if (controller.isComplete && !_hasNavigated) {
       _hasNavigated = true;
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        // Solat selesai natural — unpin; tak perlu tunggu sebab Summary
-        // masih dalam app sendiri (fire-and-forget elak async gap).
+        // Solat selesai natural — unpin + lepas wakelock; tak perlu tunggu
+        // sebab Summary masih dalam app sendiri (fire-and-forget elak
+        // async gap).
         KioskService.stopPinning();
+        SessionWakelock.disable();
         if (!mounted) return;
         Navigator.of(context).pushReplacement(
           MaterialPageRoute(

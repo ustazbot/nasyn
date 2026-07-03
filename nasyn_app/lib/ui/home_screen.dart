@@ -5,6 +5,7 @@ import '../audio/audio_cue_resolver.dart';
 import '../i18n/app_locale.dart';
 import '../i18n/app_strings.dart';
 import '../kiosk/kiosk_service.dart';
+import '../kiosk/session_wakelock.dart';
 import '../prayer/prayer_config.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_text_styles.dart';
@@ -58,8 +59,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     );
 
     if (start == true && mounted) {
-      // Pin skrin sepanjang sesi solat; gagal pun sesi tetap jalan.
+      // Pin skrin + kekalkan skrin ON sepanjang sesi solat;
+      // gagal pun sesi tetap jalan.
       await KioskService.startPinning();
+      await SessionWakelock.enable();
       if (!mounted) return;
       Navigator.of(context).push(
         MaterialPageRoute(
