@@ -167,9 +167,10 @@ class GuidedModeController extends ChangeNotifier {
     }
 
     // Fixed-posture states. Durasi efektif = floor + extra Settings.
+    // Dual-gate untuk SEMUA level bila ada cue: tunggu tumaninah floor DAN
+    // audio habis — elak cue panjang (cth. iktidal 7s > floor 3s) terpotong.
     final duration = tumaninah[engine.currentState]!;
-    final isFullRecite = level == AssistanceLevel.fullRecite;
-    if (isFullRecite && cues.isNotEmpty) {
+    if (cues.isNotEmpty) {
       var tumaninahElapsed = false;
       var audioCompleted = false;
       _timer = Timer(duration, () {
@@ -181,7 +182,6 @@ class GuidedModeController extends ChangeNotifier {
         if (tumaninahElapsed) _autoAdvance();
       });
     } else {
-      if (cues.isNotEmpty) _playSequence(cues, () {});
       _timer = Timer(duration, _autoAdvance);
     }
   }

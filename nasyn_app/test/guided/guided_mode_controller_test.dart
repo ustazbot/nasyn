@@ -9,42 +9,45 @@ import 'package:nasyn_app/prayer/prayer_state.dart';
 import '../support/fake_audio_service.dart';
 
 void main() {
-  test('Takbir Only: audio-driven takbir, manual-Next qiyam, fixed-timer rukuk', () {
-    fakeAsync((async) {
-      final audio = FakeAudioService();
-      final controller = GuidedModeController(
-        config: prayerConfigs[PrayerType.zuhur]!,
-        level: AssistanceLevel.takbirOnly,
-        audioService: audio,
-        cueResolver: AudioCueResolver(),
-      );
+  test(
+    'Takbir Only: audio-driven takbir, manual-Next qiyam, fixed-timer rukuk',
+    () {
+      fakeAsync((async) {
+        final audio = FakeAudioService();
+        final controller = GuidedModeController(
+          config: prayerConfigs[PrayerType.zuhur]!,
+          level: AssistanceLevel.takbirOnly,
+          audioService: audio,
+          cueResolver: AudioCueResolver(),
+        );
 
-      // takbiratulIhram IS the opening takbir (no prefix) -> advances on audio complete
-      audio.completeCurrent();
-      async.flushMicrotasks();
-      expect(controller.currentState, PrayerState.qiyam);
+        // takbiratulIhram IS the opening takbir (no prefix) -> advances on audio complete
+        audio.completeCurrent();
+        async.flushMicrotasks();
+        expect(controller.currentState, PrayerState.qiyam);
 
-      // rakaat-1 qiyam is the first Qiyam of the session, so it gets no
-      // takbir transition prefix (it would double up with takbiratulIhram's
-      // own takbir); qiyam itself (variable-reading, Takbir Only has no cue)
-      // waits for manual Next regardless.
-      async.elapse(const Duration(seconds: 10));
-      expect(controller.currentState, PrayerState.qiyam);
-      controller.next();
-      expect(controller.currentState, PrayerState.rukuk);
+        // rakaat-1 qiyam is the first Qiyam of the session, so it gets no
+        // takbir transition prefix (it would double up with takbiratulIhram's
+        // own takbir); qiyam itself (variable-reading, Takbir Only has no cue)
+        // waits for manual Next regardless.
+        async.elapse(const Duration(seconds: 10));
+        expect(controller.currentState, PrayerState.qiyam);
+        controller.next();
+        expect(controller.currentState, PrayerState.rukuk);
 
-      // rukuk's takbir transition prefix must finish before its own
-      // (Takbir-Only-has-no-cue) fixed 3s tuma'ninah timer is armed
-      audio.completeCurrent();
-      async.flushMicrotasks();
+        // rukuk's takbir transition prefix must finish before its own
+        // (Takbir-Only-has-no-cue) fixed 3s tuma'ninah timer is armed
+        audio.completeCurrent();
+        async.flushMicrotasks();
 
-      // rukuk is fixed-posture, Takbir Only has no cue -> fixed 4s timer
-      async.elapse(const Duration(seconds: 3, milliseconds: 900));
-      expect(controller.currentState, PrayerState.rukuk);
-      async.elapse(const Duration(milliseconds: 200));
-      expect(controller.currentState, PrayerState.iktidal);
-    });
-  });
+        // rukuk is fixed-posture, Takbir Only has no cue -> fixed 4s timer
+        async.elapse(const Duration(seconds: 3, milliseconds: 900));
+        expect(controller.currentState, PrayerState.rukuk);
+        async.elapse(const Duration(milliseconds: 200));
+        expect(controller.currentState, PrayerState.iktidal);
+      });
+    },
+  );
 
   test('Full Recite: fixed-posture state waits for max(tumaninah, audio)', () {
     fakeAsync((async) {
@@ -56,13 +59,15 @@ void main() {
         cueResolver: AudioCueResolver(),
       );
 
-      audio.completeCurrent(); // takbiratulIhram audio finishes (no prefix for it)
+      audio
+          .completeCurrent(); // takbiratulIhram audio finishes (no prefix for it)
       async.flushMicrotasks();
       expect(controller.currentState, PrayerState.qiyam);
 
       // first Qiyam of the session gets no takbir prefix (it would double up
       // with takbiratulIhram's own takbir) -> Al-Fatihah plays immediately
-      audio.completeCurrent(); // Al-Fatihah finishes -> qiyam advances (Full Recite)
+      audio
+          .completeCurrent(); // Al-Fatihah finishes -> qiyam advances (Full Recite)
       async.flushMicrotasks();
       expect(controller.currentState, PrayerState.rukuk);
 
@@ -92,13 +97,15 @@ void main() {
 
       audio.completeCurrent(); // takbiratulIhram -> qiyam
       async.flushMicrotasks();
-      controller.next(); // qiyam -> rukuk (manual, Takbir Only has no qiyam cue)
+      controller
+          .next(); // qiyam -> rukuk (manual, Takbir Only has no qiyam cue)
 
       controller.pause();
       async.elapse(const Duration(seconds: 5));
       expect(controller.currentState, PrayerState.rukuk);
 
-      controller.resume(); // re-enters rukuk -> re-arms its takbir transition prefix
+      controller
+          .resume(); // re-enters rukuk -> re-arms its takbir transition prefix
       audio.completeCurrent(); // rukuk's takbir transition prefix finishes
       async.flushMicrotasks();
       async.elapse(const Duration(seconds: 4));
@@ -164,67 +171,73 @@ void main() {
     });
   });
 
-  test('Takbir Only: rakaat-2 Qiyam (Subuh) still gets its takbir prefix, unlike rakaat 1', () {
-    fakeAsync((async) {
-      final audio = FakeAudioService();
-      final controller = GuidedModeController(
-        config: prayerConfigs[PrayerType.subuh]!,
-        level: AssistanceLevel.takbirOnly,
-        audioService: audio,
-        cueResolver: AudioCueResolver(),
-      );
+  test(
+    'Takbir Only: rakaat-2 Qiyam (Subuh) still gets its takbir prefix, unlike rakaat 1',
+    () {
+      fakeAsync((async) {
+        final audio = FakeAudioService();
+        final controller = GuidedModeController(
+          config: prayerConfigs[PrayerType.subuh]!,
+          level: AssistanceLevel.takbirOnly,
+          audioService: audio,
+          cueResolver: AudioCueResolver(),
+        );
 
-      // takbiratulIhram IS the opening takbir (no prefix) -> advances on audio complete
-      audio.completeCurrent();
-      async.flushMicrotasks();
-      expect(controller.currentState, PrayerState.qiyam);
-      expect(controller.currentRakaat, 1);
+        // takbiratulIhram IS the opening takbir (no prefix) -> advances on audio complete
+        audio.completeCurrent();
+        async.flushMicrotasks();
+        expect(controller.currentState, PrayerState.qiyam);
+        expect(controller.currentRakaat, 1);
 
-      // rakaat-1 qiyam is the first Qiyam of the session -> no takbir prefix
-      // (Takbir Only has no cue for qiyam either) -> manual Next only.
-      controller.next();
-      expect(controller.currentState, PrayerState.rukuk);
+        // rakaat-1 qiyam is the first Qiyam of the session -> no takbir prefix
+        // (Takbir Only has no cue for qiyam either) -> manual Next only.
+        controller.next();
+        expect(controller.currentState, PrayerState.rukuk);
 
-      // rukuk's takbir transition prefix must finish before its own
-      // (Takbir-Only-has-no-cue) fixed 4s tuma'ninah timer is armed.
-      audio.completeCurrent();
-      async.flushMicrotasks();
-      async.elapse(const Duration(seconds: 4));
-      expect(controller.currentState, PrayerState.iktidal);
+        // rukuk's takbir transition prefix must finish before its own
+        // (Takbir-Only-has-no-cue) fixed 4s tuma'ninah timer is armed.
+        audio.completeCurrent();
+        async.flushMicrotasks();
+        async.elapse(const Duration(seconds: 4));
+        expect(controller.currentState, PrayerState.iktidal);
 
-      // Iktidal is excluded from the takbir prefix; its own cue (bacaanIktidal)
-      // always plays regardless of level, but Takbir Only ignores audio
-      // completion and just waits out the fixed 3s tuma'ninah timer.
-      async.elapse(const Duration(seconds: 3));
-      expect(controller.currentState, PrayerState.sujud1);
+        // Iktidal is excluded from the takbir prefix; its own cue (bacaanIktidal)
+        // always plays regardless of level. Dual-gate: waits for BOTH the fixed
+        // 3s tuma'ninah floor AND audio completion (cue is 7s — never cut off).
+        async.elapse(const Duration(seconds: 3));
+        expect(controller.currentState, PrayerState.iktidal);
+        audio.completeCurrent();
+        async.flushMicrotasks();
+        expect(controller.currentState, PrayerState.sujud1);
 
-      // sujud1's takbir transition prefix, then its fixed 4s tuma'ninah timer.
-      audio.completeCurrent();
-      async.flushMicrotasks();
-      async.elapse(const Duration(seconds: 4));
-      expect(controller.currentState, PrayerState.dudukAntaraSujud);
+        // sujud1's takbir transition prefix, then its fixed 4s tuma'ninah timer.
+        audio.completeCurrent();
+        async.flushMicrotasks();
+        async.elapse(const Duration(seconds: 4));
+        expect(controller.currentState, PrayerState.dudukAntaraSujud);
 
-      // dudukAntaraSujud's takbir transition prefix, then its fixed 3s timer.
-      audio.completeCurrent();
-      async.flushMicrotasks();
-      async.elapse(const Duration(seconds: 3));
-      expect(controller.currentState, PrayerState.sujud2);
+        // dudukAntaraSujud's takbir transition prefix, then its fixed 3s timer.
+        audio.completeCurrent();
+        async.flushMicrotasks();
+        async.elapse(const Duration(seconds: 3));
+        expect(controller.currentState, PrayerState.sujud2);
 
-      // sujud2's takbir transition prefix, then its fixed 4s timer. Subuh has
-      // no tahiyat awal, so advancing from rakaat-1 sujud2 goes straight to
-      // rakaat-2 qiyam -- the shortest path to a non-first-Qiyam entry.
-      audio.completeCurrent();
-      async.flushMicrotasks();
-      async.elapse(const Duration(seconds: 4));
-      expect(controller.currentState, PrayerState.qiyam);
-      expect(controller.currentRakaat, 2);
+        // sujud2's takbir transition prefix, then its fixed 4s timer. Subuh has
+        // no tahiyat awal, so advancing from rakaat-1 sujud2 goes straight to
+        // rakaat-2 qiyam -- the shortest path to a non-first-Qiyam entry.
+        audio.completeCurrent();
+        async.flushMicrotasks();
+        async.elapse(const Duration(seconds: 4));
+        expect(controller.currentState, PrayerState.qiyam);
+        expect(controller.currentRakaat, 2);
 
-      // Unlike rakaat 1's qiyam, this rakaat-2 qiyam is NOT the first Qiyam of
-      // the session, so isFirstQiyamOfSession does not suppress its takbir
-      // transition prefix: it plays immediately upon entry.
-      expect(audio.lastPlayedPath, NasynAudio.takbiratulIhram);
-    });
-  });
+        // Unlike rakaat 1's qiyam, this rakaat-2 qiyam is NOT the first Qiyam of
+        // the session, so isFirstQiyamOfSession does not suppress its takbir
+        // transition prefix: it plays immediately upon entry.
+        expect(audio.lastPlayedPath, NasynAudio.takbiratulIhram);
+      });
+    },
+  );
 
   test('niatCue: main niat dulu, FSM mula selepas audio niat habis', () {
     fakeAsync((async) {
@@ -284,47 +297,52 @@ void main() {
       PrayerType.isyak,
     ]) {
       expect(NasynAudio.niatBySolat[type], isNotNull);
-      expect(NasynAudio.isPendingRecording(NasynAudio.niatBySolat[type]!),
-          isFalse);
+      expect(
+        NasynAudio.isPendingRecording(NasynAudio.niatBySolat[type]!),
+        isFalse,
+      );
     }
     expect(NasynAudio.niatBySolat[PrayerType.sunat], isNull);
   });
 
-  test('Surah: rakaat 1 → sequential Fatihah habis PENUH dulu baru surah 1', () {
-    fakeAsync((async) {
-      final audio = FakeAudioService();
-      final controller = GuidedModeController(
-        config: prayerConfigs[PrayerType.subuh]!,
-        level: AssistanceLevel.fullRecite,
-        audioService: audio,
-        cueResolver: AudioCueResolver(),
-        surahRakaat1: NasynAudio.alKafirun,
-        surahRakaat2: NasynAudio.alIkhlas,
-      );
+  test(
+    'Surah: rakaat 1 → sequential Fatihah habis PENUH dulu baru surah 1',
+    () {
+      fakeAsync((async) {
+        final audio = FakeAudioService();
+        final controller = GuidedModeController(
+          config: prayerConfigs[PrayerType.subuh]!,
+          level: AssistanceLevel.fullRecite,
+          audioService: audio,
+          cueResolver: AudioCueResolver(),
+          surahRakaat1: NasynAudio.alKafirun,
+          surahRakaat2: NasynAudio.alIkhlas,
+        );
 
-      // takbiratulIhram habis → qiyam rakaat 1, Fatihah mula.
-      audio.completeCurrent();
-      async.flushMicrotasks();
-      expect(controller.currentState, PrayerState.qiyam);
-      expect(audio.lastPlayedPath, NasynAudio.alFatihah);
+        // takbiratulIhram habis → qiyam rakaat 1, Fatihah mula.
+        audio.completeCurrent();
+        async.flushMicrotasks();
+        expect(controller.currentState, PrayerState.qiyam);
+        expect(audio.lastPlayedPath, NasynAudio.alFatihah);
 
-      // Masa berlalu TIDAK mula surah — gate onComplete, bukan timer.
-      async.elapse(const Duration(seconds: 60));
-      expect(audio.lastPlayedPath, NasynAudio.alFatihah);
-      expect(controller.currentState, PrayerState.qiyam);
+        // Masa berlalu TIDAK mula surah — gate onComplete, bukan timer.
+        async.elapse(const Duration(seconds: 60));
+        expect(audio.lastPlayedPath, NasynAudio.alFatihah);
+        expect(controller.currentState, PrayerState.qiyam);
 
-      // Fatihah habis penuh → BARU surah rakaat 1 mula (tiada overlap).
-      audio.completeCurrent();
-      async.flushMicrotasks();
-      expect(audio.lastPlayedPath, NasynAudio.alKafirun);
-      expect(controller.currentState, PrayerState.qiyam);
+        // Fatihah habis penuh → BARU surah rakaat 1 mula (tiada overlap).
+        audio.completeCurrent();
+        async.flushMicrotasks();
+        expect(audio.lastPlayedPath, NasynAudio.alKafirun);
+        expect(controller.currentState, PrayerState.qiyam);
 
-      // Surah habis → seluruh senarai selesai → advance ke rukuk.
-      audio.completeCurrent();
-      async.flushMicrotasks();
-      expect(controller.currentState, PrayerState.rukuk);
-    });
-  });
+        // Surah habis → seluruh senarai selesai → advance ke rukuk.
+        audio.completeCurrent();
+        async.flushMicrotasks();
+        expect(controller.currentState, PrayerState.rukuk);
+      });
+    },
+  );
 
   test('Surah: rakaat 2 → surahRakaat2 (bukan surahRakaat1)', () {
     fakeAsync((async) {
@@ -375,12 +393,18 @@ void main() {
         // Takbir prefix → Fatihah → habis → TERUS advance (tiada surah).
         audio.completeCurrent();
         async.flushMicrotasks();
-        expect(audio.lastPlayedPath, NasynAudio.alFatihah,
-            reason: 'rakaat $rakaat: Fatihah main');
+        expect(
+          audio.lastPlayedPath,
+          NasynAudio.alFatihah,
+          reason: 'rakaat $rakaat: Fatihah main',
+        );
         audio.completeCurrent();
         async.flushMicrotasks();
-        expect(controller.currentState, PrayerState.rukuk,
-            reason: 'rakaat $rakaat: tiada surah, terus rukuk');
+        expect(
+          controller.currentState,
+          PrayerState.rukuk,
+          reason: 'rakaat $rakaat: tiada surah, terus rukuk',
+        );
       }
     });
   });
@@ -403,6 +427,36 @@ void main() {
       expect(controller.currentRakaat, 2);
       // Qunut tiada takbir prefix; cue qunut main terus, satu fail sahaja.
       expect(audio.lastPlayedPath, NasynAudio.qunut);
+      audio.completeCurrent();
+      async.flushMicrotasks();
+      expect(controller.currentState, PrayerState.sujud1);
+    });
+  });
+  test('Iktidal Takbir Only: audio 7s > floor 3s — TIDAK dipotong timer', () {
+    fakeAsync((async) {
+      final audio = FakeAudioService();
+      final controller = GuidedModeController(
+        config: prayerConfigs[PrayerType.maghrib]!,
+        level: AssistanceLevel.takbirOnly,
+        audioService: audio,
+        cueResolver: AudioCueResolver(),
+      );
+
+      // Sampai ke iktidal: takbir -> qiyam (manual next) -> rukuk -> iktidal
+      audio.completeCurrent();
+      async.flushMicrotasks();
+      controller.next(); // qiyam -> rukuk
+      audio.completeCurrent(); // takbir prefix rukuk habis
+      async.flushMicrotasks();
+      async.elapse(const Duration(seconds: 4)); // tumaninah rukuk
+      expect(controller.currentState, PrayerState.iktidal);
+      expect(audio.lastPlayedPath, NasynAudio.bacaanIktidal);
+
+      // Floor iktidal 3s berlalu tapi audio (7s) belum habis — JANGAN advance
+      async.elapse(const Duration(seconds: 3));
+      expect(controller.currentState, PrayerState.iktidal);
+
+      // Audio habis selepas floor — baru advance (dual-gate)
       audio.completeCurrent();
       async.flushMicrotasks();
       expect(controller.currentState, PrayerState.sujud1);
