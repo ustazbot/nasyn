@@ -71,6 +71,10 @@ class NasynAudio {
   static const String tahiyatAkhir = '${_rukun}tahiyat-akhir.mp3';
   static const String salam = '${_rukun}salam.mp3';
   static const String qunut = '${_rukun}qunut.mp3'; // Subuh sahaja — aliran lalai rakaat ke-2, selepas iktidal
+  // Direkod 2 Julai 2026 — belum diwire ke resolver & belum masuk senarai
+  // approved (keputusan Bos).
+  static const String doaIftitah = '${_rukun}doa-iftitah.mp3';
+  static const String bismillah = '${_rukun}bismillah.mp3';
 
   // ─── Nama Posisi Ringkas (Position Guide — Level 2) ───
   // BAHARU — tak wujud dalam manifest lama. Ini yang power-kan
@@ -87,13 +91,9 @@ class NasynAudio {
   // Guna path placeholder supaya kod tak crash bila dipanggil;
   // NasynAudio.isPendingRecording() akan block playback + log warning.
 
-  static const String doaIftitah = '${_rukun}doa-iftitah.mp3';
-  static const String bismillah = '${_rukun}bismillah.mp3';
   static const String handoverNotis = '${_rukun}handover-notis.mp3';
 
   static const List<String> needRecording = [
-    doaIftitah,
-    bismillah,
     handoverNotis,
   ];
 
