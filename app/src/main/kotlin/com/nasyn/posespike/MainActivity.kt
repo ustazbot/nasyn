@@ -45,6 +45,33 @@ class MainActivity : AppCompatActivity(), PoseLandmarkerHelper.Listener {
     private var latestClassification: PoseClassification = PoseClassification(PoseClass.UNKNOWN, 0)
     private var latestInferenceTimeMs: Long = 0
 
+    // §8.13 proximity signal untuk SUJUD: kepala rapat lens menutup cahaya
+    // → luma frame jatuh mendadak + landmark hilang serentak = SUJUD.
+    // Baseline = EMA luma semasa landmark visible (frame tak terlindung).
+    @Volatile private var latestLuma = 0f
+    @Volatile private var lumaBaseline = 0f
+
+    private fun meanLuma(bitmap: Bitmap): Float {
+        val stepX = (bitmap.width / 16).coerceAtLeast(1)
+        val stepY = (bitmap.height / 16).coerceAtLeast(1)
+        var sum = 0L
+        var count = 0
+        var y = 0
+        while (y < bitmap.height) {
+            var x = 0
+            while (x < bitmap.width) {
+                val p = bitmap.getPixel(x, y)
+                sum += (android.graphics.Color.red(p) +
+                    android.graphics.Color.green(p) +
+                    android.graphics.Color.blue(p)) / 3
+                count++
+                x += stepX
+            }
+            y += stepY
+        }
+        return sum.toFloat() / count
+    }
+
     private val requestCameraPermission = registerForActivityResult(
         ActivityResultContracts.RequestPermission()
     ) { granted -> if (granted) startCamera() }
@@ -64,7 +91,12 @@ class MainActivity : AppCompatActivity(), PoseLandmarkerHelper.Listener {
                 latestLandmarks = landmarks
                 latestClassification = classification
                 latestInferenceTimeMs = inferenceTimeMs
-                overlay.update(classification, landmarks, inferenceTimeMs)
+                val feature = landmarks?.let { com.nasyn.posespike.pose.poseFeature(it) }
+                val debugInfo = buildString {
+                    append("luma %.0f / base %.0f".format(latestLuma, lumaBaseline))
+                    feature?.let { append("  y%.2f sz%.2f".format(it.headY, it.logHeadSize)) }
+                }
+                overlay.update(classification, landmarks, inferenceTimeMs, debugInfo)
             }
         })
 
@@ -117,6 +149,8 @@ class MainActivity : AppCompatActivity(), PoseLandmarkerHelper.Listener {
                 val frameTimeMs = imageProxy.imageInfo.timestamp / 1_000_000
                 imageProxy.close()
 
+                latestLuma = meanLuma(bitmap)
+
                 poseLandmarkerHelper?.detectAsync(
                     bitmap = bitmap,
                     rotationDegrees = rotationDegrees,
@@ -137,8 +171,18 @@ class MainActivity : AppCompatActivity(), PoseLandmarkerHelper.Listener {
 
     override fun onResult(result: com.google.mediapipe.tasks.vision.poselandmarker.PoseLandmarkerResult, inferenceTimeMs: Long) {
         val landmarks = LandmarkMapper.toPoseLandmarks(result)
+        val luma = latestLuma
         val classification = if (landmarks != null) {
+            // Frame tak terlindung — kemaskini baseline cahaya
+            lumaBaseline =
+                if (lumaBaseline == 0f) luma else 0.9f * lumaBaseline + 0.1f * luma
             classifier.classify(landmarks)
+        } else if (lumaBaseline > 0f && luma < lumaBaseline * 0.45f) {
+            // §8.13: tiada landmark + frame gelap mendadak (<45% baseline)
+            // = kepala menutup lens = SUJUD proximity.
+            // ponytail: threshold 0.45 tekaan awal — tala ikut data spike
+            val darkness = 1f - (luma / (lumaBaseline * 0.45f))
+            PoseClassification(PoseClass.SUJUD, (60 + 40 * darkness).toInt().coerceIn(60, 100))
         } else {
             PoseClassification(PoseClass.UNKNOWN, 0)
         }

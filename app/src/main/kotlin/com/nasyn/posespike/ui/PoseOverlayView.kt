@@ -27,11 +27,18 @@ class PoseOverlayView(context: Context) : View(context) {
     private var classification: PoseClassification? = null
     private var landmarks: PoseLandmarks? = null
     private var inferenceTimeMs: Long = 0
+    private var debugInfo: String = ""
 
-    fun update(classification: PoseClassification, landmarks: PoseLandmarks?, inferenceTimeMs: Long) {
+    fun update(
+        classification: PoseClassification,
+        landmarks: PoseLandmarks?,
+        inferenceTimeMs: Long,
+        debugInfo: String = "",
+    ) {
         this.classification = classification
         this.landmarks = landmarks
         this.inferenceTimeMs = inferenceTimeMs
+        this.debugInfo = debugInfo
         postInvalidate()
     }
 
@@ -50,8 +57,9 @@ class PoseOverlayView(context: Context) : View(context) {
             "Pose: ${result.poseClass}",
             "Confidence: ${result.confidence}%",
             "Latency: ${inferenceTimeMs}ms",
+            debugInfo,
         )
-        canvas.drawRect(20f, 60f, 620f, 260f, textBackgroundPaint)
+        canvas.drawRect(20f, 60f, 620f, 320f, textBackgroundPaint)
         lines.forEachIndexed { index, line ->
             canvas.drawText(line, 40f, 120f + index * 60f, textPaint)
         }
