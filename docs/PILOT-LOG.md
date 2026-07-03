@@ -25,6 +25,11 @@ Berjaya >95% · False Alert <1% (tak relevan Guided Mode) · Masa setup <3 min.
 
 ## Gate sebelum pilot luaran (bukan keluarga)
 
-- [ ] Device Owner aktif (sign out Mi Account → dpm set-device-owner)
+- [x] Device Owner aktif — **SELESAI 4 Julai 2026** via QR Provisioning
+      (dpm adb disekat MIUI). Disahkan Bos pada device: full lock tanpa
+      dialog pin, tiada escape gesture, auto-relaunch NASYN lepas reboot
 - [ ] FIQH-000 keputusan bertulis Bos
-- [ ] Sekurang-kurangnya 3 sesi pilot dalaman lengkap tanpa isu kritikal
+- [x] Sekurang-kurangnya 3 sesi pilot dalaman lengkap tanpa isu kritikal —
+      **SELESAI** (Zuhur Bacaan Penuh, Maghrib Takbir Sahaja, Isyak Panduan
+      Posisi; semua penemuan ditutup: fix iktidal, Tempoh Bacaan Sendiri,
+      persist level)
