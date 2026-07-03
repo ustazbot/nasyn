@@ -19,6 +19,25 @@ Android 10, RAM 4GB — lulus spec. Dua sekatan MIUI dikenal pasti (4 Julai 2026
 **Urutan betul: enable Install via USB → install APK → sign out Mi Account
 → dpm set-device-owner.**
 
+> ⚠️ **Update 4 Julai 2026:** `dpm set-device-owner` via adb turut disekat
+> MIUI (perlukan "USB debugging (Security settings)" = perlukan SIM).
+> **Kaedah muktamad tanpa SIM: QR Provisioning (di bawah).**
+
+## Kaedah Muktamad: QR Provisioning (tanpa SIM, tanpa adb)
+
+1. **Factory reset** device (Settings → About phone → Factory reset)
+2. Pada skrin welcome selepas reset: **tap 6 kali** di mana-mana → QR
+   scanner provisioning muncul
+3. Sambung WiFi bila diminta → **scan `docs/provisioning-qr.png`**
+4. Android muat turun APK dari GitHub Release (`v1.0.0-pilot`) dan set
+   NASYN sebagai device owner secara automatik
+5. Verify: `adb shell dumpsys device_policy | grep -i owner`
+
+QR mengandungi: component `com.nasyn.nasyn_app/.NasynDeviceAdminReceiver`,
+URL APK release, dan signature checksum
+`0aYii5yojEAHB1Hlr36XuuddvC_DDkuQ89sj-ZZJtws` (SHA-256 cert, base64url).
+**Jana semula QR bila signing key berubah** (checksum tak sepadan = provisioning gagal).
+
 ## Checklist Sebelum Beli/Provision
 
 - [ ] Android 10+ (bukan 8/9)
