@@ -11,6 +11,7 @@ import '../theme/app_text_styles.dart';
 import '../theme/responsive.dart';
 import 'prayer_session_screen.dart';
 import 'settings_screen.dart';
+import 'surah_selection_screen.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
@@ -62,8 +63,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       if (!mounted) return;
       Navigator.of(context).push(
         MaterialPageRoute(
-          builder: (_) =>
-              PrayerSessionScreen(prayerType: type, level: _selectedLevel),
+          // Full Recite sahaja: pilih surah rakaat 1 & 2 dulu.
+          builder: (_) => _selectedLevel == AssistanceLevel.fullRecite
+              ? SurahSelectionScreen(prayerType: type)
+              : PrayerSessionScreen(prayerType: type, level: _selectedLevel),
         ),
       );
     }

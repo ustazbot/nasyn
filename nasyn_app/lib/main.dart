@@ -17,6 +17,8 @@ Future<void> main() async {
             .overrideWith((ref) => repo.readTimingProfile()),
         alertModeProvider.overrideWith((ref) => repo.readAlertMode()),
         appLocaleProvider.overrideWith((ref) => repo.readLocale()),
+        surahRakaat1Provider.overrideWith((ref) => repo.readSurahRakaat1()),
+        surahRakaat2Provider.overrideWith((ref) => repo.readSurahRakaat2()),
       ],
       child: const NasynApp(),
     ),

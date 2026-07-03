@@ -62,6 +62,15 @@ class AppStrings {
       AppLocale.en: 'Sitting Between Prostrations',
     },
     'saat': {AppLocale.bm: 'saat', AppLocale.en: 'sec'},
+    'pilihSurah': {AppLocale.bm: 'Pilih Surah', AppLocale.en: 'Choose Surah'},
+    'surahRakaat1': {
+      AppLocale.bm: 'Surah Rakaat 1',
+      AppLocale.en: 'Surah for Rakaat 1',
+    },
+    'surahRakaat2': {
+      AppLocale.bm: 'Surah Rakaat 2',
+      AppLocale.en: 'Surah for Rakaat 2',
+    },
     'asasLabel': {AppLocale.bm: 'asas', AppLocale.en: 'base'},
   };
 

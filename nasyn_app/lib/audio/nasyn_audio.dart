@@ -141,4 +141,10 @@ class NasynAudio {
   ];
 
   static bool isPendingRecording(String path) => needRecording.contains(path);
+
+  /// Label UI dari path surah: '.../093-Ad-Dhuha.mp3' → 'Ad-Dhuha'.
+  static String surahDisplayName(String path) {
+    final file = path.split('/').last;
+    return file.substring(4, file.length - 4);
+  }
 }

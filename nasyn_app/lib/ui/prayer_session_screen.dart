@@ -31,6 +31,8 @@ final guidedModeControllerProvider = ChangeNotifierProvider.autoDispose
         cueResolver: AudioCueResolver(),
         timing: ref.read(timingProfileProvider),
         niatCue: NasynAudio.niatBySolat[args.type],
+        surahRakaat1: ref.read(surahRakaat1Provider),
+        surahRakaat2: ref.read(surahRakaat2Provider),
       );
       ref.onDispose(controller.dispose);
       return controller;

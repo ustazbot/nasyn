@@ -287,4 +287,123 @@ void main() {
     }
     expect(NasynAudio.niatBySolat[PrayerType.sunat], isNull);
   });
+
+  test('Surah: rakaat 1 → sequential Fatihah habis PENUH dulu baru surah 1', () {
+    fakeAsync((async) {
+      final audio = FakeAudioService();
+      final controller = GuidedModeController(
+        config: prayerConfigs[PrayerType.subuh]!,
+        level: AssistanceLevel.fullRecite,
+        audioService: audio,
+        cueResolver: AudioCueResolver(),
+        surahRakaat1: NasynAudio.alKafirun,
+        surahRakaat2: NasynAudio.alIkhlas,
+      );
+
+      // takbiratulIhram habis → qiyam rakaat 1, Fatihah mula.
+      audio.completeCurrent();
+      async.flushMicrotasks();
+      expect(controller.currentState, PrayerState.qiyam);
+      expect(audio.lastPlayedPath, NasynAudio.alFatihah);
+
+      // Masa berlalu TIDAK mula surah — gate onComplete, bukan timer.
+      async.elapse(const Duration(seconds: 60));
+      expect(audio.lastPlayedPath, NasynAudio.alFatihah);
+      expect(controller.currentState, PrayerState.qiyam);
+
+      // Fatihah habis penuh → BARU surah rakaat 1 mula (tiada overlap).
+      audio.completeCurrent();
+      async.flushMicrotasks();
+      expect(audio.lastPlayedPath, NasynAudio.alKafirun);
+      expect(controller.currentState, PrayerState.qiyam);
+
+      // Surah habis → seluruh senarai selesai → advance ke rukuk.
+      audio.completeCurrent();
+      async.flushMicrotasks();
+      expect(controller.currentState, PrayerState.rukuk);
+    });
+  });
+
+  test('Surah: rakaat 2 → surahRakaat2 (bukan surahRakaat1)', () {
+    fakeAsync((async) {
+      final audio = FakeAudioService();
+      final controller = GuidedModeController(
+        config: prayerConfigs[PrayerType.subuh]!,
+        level: AssistanceLevel.fullRecite,
+        audioService: audio,
+        cueResolver: AudioCueResolver(),
+        surahRakaat1: NasynAudio.alKafirun,
+        surahRakaat2: NasynAudio.alIkhlas,
+      );
+
+      // Skip manual sampai qiyam rakaat 2.
+      while (!(controller.currentRakaat == 2 &&
+          controller.currentState == PrayerState.qiyam)) {
+        controller.next();
+      }
+      // Qiyam rakaat 2 bukan qiyam pertama → takbir prefix dulu.
+      expect(audio.lastPlayedPath, NasynAudio.takbiratulIhram);
+      audio.completeCurrent();
+      async.flushMicrotasks();
+      expect(audio.lastPlayedPath, NasynAudio.alFatihah);
+
+      audio.completeCurrent();
+      async.flushMicrotasks();
+      expect(audio.lastPlayedPath, NasynAudio.alIkhlas);
+    });
+  });
+
+  test('Surah: Zuhur rakaat 3 & 4 → Fatihah SAHAJA, terus advance', () {
+    fakeAsync((async) {
+      final audio = FakeAudioService();
+      final controller = GuidedModeController(
+        config: prayerConfigs[PrayerType.zuhur]!,
+        level: AssistanceLevel.fullRecite,
+        audioService: audio,
+        cueResolver: AudioCueResolver(),
+        surahRakaat1: NasynAudio.alKafirun,
+        surahRakaat2: NasynAudio.alIkhlas,
+      );
+
+      for (final rakaat in [3, 4]) {
+        while (!(controller.currentRakaat == rakaat &&
+            controller.currentState == PrayerState.qiyam)) {
+          controller.next();
+        }
+        // Takbir prefix → Fatihah → habis → TERUS advance (tiada surah).
+        audio.completeCurrent();
+        async.flushMicrotasks();
+        expect(audio.lastPlayedPath, NasynAudio.alFatihah,
+            reason: 'rakaat $rakaat: Fatihah main');
+        audio.completeCurrent();
+        async.flushMicrotasks();
+        expect(controller.currentState, PrayerState.rukuk,
+            reason: 'rakaat $rakaat: tiada surah, terus rukuk');
+      }
+    });
+  });
+
+  test('Surah: qunut Subuh rakaat 2 tak terjejas', () {
+    fakeAsync((async) {
+      final audio = FakeAudioService();
+      final controller = GuidedModeController(
+        config: prayerConfigs[PrayerType.subuh]!,
+        level: AssistanceLevel.fullRecite,
+        audioService: audio,
+        cueResolver: AudioCueResolver(),
+        surahRakaat1: NasynAudio.alKafirun,
+        surahRakaat2: NasynAudio.alIkhlas,
+      );
+
+      while (controller.currentState != PrayerState.qunut) {
+        controller.next();
+      }
+      expect(controller.currentRakaat, 2);
+      // Qunut tiada takbir prefix; cue qunut main terus, satu fail sahaja.
+      expect(audio.lastPlayedPath, NasynAudio.qunut);
+      audio.completeCurrent();
+      async.flushMicrotasks();
+      expect(controller.currentState, PrayerState.sujud1);
+    });
+  });
 }

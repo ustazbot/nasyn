@@ -20,21 +20,42 @@ class AudioCueResolver {
   bool needsTakbirTransition(PrayerState state) =>
       !_noTakbirTransition.contains(state);
 
-  /// Returns the asset path to play for this state at this level, or null
-  /// if nothing should play. [config] is accepted for future per-prayer
-  /// cues — the qunut state itself only occurs when the FSM's config is
-  /// qunutEligible, so no config check is needed here.
-  String? resolve(PrayerState state, AssistanceLevel level, PrayerConfig config) {
+  /// Returns the asset paths to play in sequence for this state at this
+  /// level; empty if nothing should play. [config] is accepted for future
+  /// per-prayer cues — the qunut state itself only occurs when the FSM's
+  /// config is qunutEligible, so no config check is needed here.
+  ///
+  /// FIQH RULE (qiyam, Full Recite): rakaat 1 → Fatihah + surahRakaat1,
+  /// rakaat 2 → Fatihah + surahRakaat2, rakaat 3+ → Fatihah SAHAJA.
+  List<String> resolve(
+    PrayerState state,
+    AssistanceLevel level,
+    PrayerConfig config, {
+    int currentRakaat = 1,
+    String? surahRakaat1,
+    String? surahRakaat2,
+  }) {
     if (state == PrayerState.iktidal) {
-      return _checkPending(NasynAudio.bacaanIktidal);
+      return _asList(_checkPending(NasynAudio.bacaanIktidal));
+    }
+    if (state == PrayerState.qiyam && level == AssistanceLevel.fullRecite) {
+      final fatihah = _checkPending(NasynAudio.alFatihah);
+      final surah = _checkPending(switch (currentRakaat) {
+        1 => surahRakaat1,
+        2 => surahRakaat2,
+        _ => null, // rakaat 3/4: Fatihah sahaja, tiada surah walau apa pun
+      });
+      return [?fatihah, ?surah];
     }
     final path = switch (level) {
       AssistanceLevel.takbirOnly => _takbirOnlyCue(state),
       AssistanceLevel.panduanPosisi => _panduanPosisiCue(state),
       AssistanceLevel.fullRecite => _fullReciteCue(state),
     };
-    return _checkPending(path);
+    return _asList(_checkPending(path));
   }
+
+  List<String> _asList(String? path) => path == null ? const [] : [path];
 
   String? _checkPending(String? path) {
     if (path == null) return null;

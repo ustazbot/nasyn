@@ -61,6 +61,11 @@ class GuidedModeController extends ChangeNotifier {
   /// bukan fixed timer — elak niat terputus atau jeda janggal).
   final String? niatCue;
 
+  /// Surah selepas Fatihah (Full Recite, qiyam). FIQH: rakaat 1 →
+  /// surahRakaat1, rakaat 2 → surahRakaat2, rakaat 3+ → Fatihah sahaja.
+  final String? surahRakaat1;
+  final String? surahRakaat2;
+
   GuidedModeController({
     required PrayerConfig config,
     required this.level,
@@ -68,6 +73,8 @@ class GuidedModeController extends ChangeNotifier {
     required this.cueResolver,
     TimingProfile? timing,
     this.niatCue,
+    this.surahRakaat1,
+    this.surahRakaat2,
   })  : engine = PrayerStateEngine(config),
         _timing = (timing ?? TimingProfile.defaults).clamped() {
     if (niatCue != null && !NasynAudio.isPendingRecording(niatCue!)) {
@@ -104,15 +111,36 @@ class GuidedModeController extends ChangeNotifier {
     }
   }
 
+  /// Main [cues] satu demi satu — setiap fail tunggu onComplete sendiri
+  /// (Fatihah habis PENUH dulu baru surah mula, tiada overlap/cut-off).
+  /// [onAllComplete] dipanggil selepas fail TERAKHIR habis.
+  void _playSequence(List<String> cues, void Function() onAllComplete) {
+    var index = 0;
+    audioService.play(cues[index]);
+    _audioCompleteSub = audioService.onComplete.listen((_) {
+      index++;
+      if (index < cues.length) {
+        audioService.play(cues[index]);
+      } else {
+        _audioCompleteSub?.cancel();
+        onAllComplete();
+      }
+    });
+  }
+
   void _playCueAndArmAdvance() {
-    final cue = cueResolver.resolve(engine.currentState, level, engine.config);
-    if (cue != null) {
-      audioService.play(cue);
-    }
+    final cues = cueResolver.resolve(
+      engine.currentState,
+      level,
+      engine.config,
+      currentRakaat: engine.currentRakaat,
+      surahRakaat1: surahRakaat1,
+      surahRakaat2: surahRakaat2,
+    );
 
     if (_shortTransitionStates.contains(engine.currentState)) {
-      if (cue != null) {
-        _audioCompleteSub = audioService.onComplete.listen((_) => _autoAdvance());
+      if (cues.isNotEmpty) {
+        _playSequence(cues, _autoAdvance);
       } else {
         _timer = Timer(_shortTransitionDuration, _autoAdvance);
       }
@@ -121,8 +149,10 @@ class GuidedModeController extends ChangeNotifier {
 
     if (_variableReadingStates.contains(engine.currentState)) {
       final isFullRecite = level == AssistanceLevel.fullRecite;
-      if (isFullRecite && cue != null) {
-        _audioCompleteSub = audioService.onComplete.listen((_) => _autoAdvance());
+      if (cues.isNotEmpty) {
+        // Full Recite: advance selepas SEMUA dalam senarai habis;
+        // level lain: cue main tapi tunggu manual Next.
+        _playSequence(cues, isFullRecite ? _autoAdvance : () {});
       }
       // else: manual Next only, no timer/subscription armed.
       return;
@@ -131,18 +161,19 @@ class GuidedModeController extends ChangeNotifier {
     // Fixed-posture states. Durasi efektif = floor + extra Settings.
     final duration = tumaninah[engine.currentState]!;
     final isFullRecite = level == AssistanceLevel.fullRecite;
-    if (isFullRecite && cue != null) {
+    if (isFullRecite && cues.isNotEmpty) {
       var tumaninahElapsed = false;
       var audioCompleted = false;
       _timer = Timer(duration, () {
         tumaninahElapsed = true;
         if (audioCompleted) _autoAdvance();
       });
-      _audioCompleteSub = audioService.onComplete.listen((_) {
+      _playSequence(cues, () {
         audioCompleted = true;
         if (tumaninahElapsed) _autoAdvance();
       });
     } else {
+      if (cues.isNotEmpty) _playSequence(cues, () {});
       _timer = Timer(duration, _autoAdvance);
     }
   }
