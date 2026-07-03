@@ -1,12 +1,48 @@
 package com.nasyn.nasyn_app
 
 import android.app.ActivityManager
+import android.app.admin.DevicePolicyManager
+import android.content.ComponentName
 import android.content.Context
+import android.content.Intent
+import android.content.IntentFilter
+import android.os.Bundle
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
 
 class MainActivity : FlutterActivity() {
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        setupCosuIfDeviceOwner()
+    }
+
+    // Bila app jadi device owner (dpm set-device-owner semasa provisioning):
+    // 1. Whitelist lock task — startLockTask() jadi full lock tanpa dialog pin
+    // 2. NASYN jadi HOME kekal — auto-relaunch lepas reboot
+    // Idempotent & senyap bila bukan device owner (dev/emulator biasa).
+    private fun setupCosuIfDeviceOwner() {
+        try {
+            val dpm =
+                getSystemService(Context.DEVICE_POLICY_SERVICE) as DevicePolicyManager
+            if (!dpm.isDeviceOwnerApp(packageName)) return
+            val admin = ComponentName(this, NasynDeviceAdminReceiver::class.java)
+            dpm.setLockTaskPackages(admin, arrayOf(packageName))
+            val homeFilter = IntentFilter(Intent.ACTION_MAIN).apply {
+                addCategory(Intent.CATEGORY_HOME)
+                addCategory(Intent.CATEGORY_DEFAULT)
+            }
+            dpm.addPersistentPreferredActivity(
+                admin,
+                homeFilter,
+                ComponentName(this, MainActivity::class.java),
+            )
+        } catch (e: Exception) {
+            // Kegagalan setup kiosk tak boleh block app — log sahaja
+            android.util.Log.w("NASYN", "COSU setup gagal: $e")
+        }
+    }
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
