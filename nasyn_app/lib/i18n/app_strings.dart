@@ -42,9 +42,9 @@ class AppStrings {
     'ya': {AppLocale.bm: 'Ya', AppLocale.en: 'Yes'},
     'batal': {AppLocale.bm: 'Batal', AppLocale.en: 'Cancel'},
     'bahasa': {AppLocale.bm: 'Bahasa', AppLocale.en: 'Language'},
-    'panduanMasa': {
-      AppLocale.bm: 'Panduan Masa',
-      AppLocale.en: 'Guided Timing',
+    'tambahMasa': {
+      AppLocale.bm: 'Tambah Masa',
+      AppLocale.en: 'Add Time',
     },
     'modAmaran': {AppLocale.bm: 'Mod Amaran', AppLocale.en: 'Alert Mode'},
     'senyap': {AppLocale.bm: 'Senyap', AppLocale.en: 'Silent'},
@@ -54,8 +54,6 @@ class AppStrings {
       AppLocale.bm: 'Reset ke Default',
       AppLocale.en: 'Reset to Default',
     },
-    'fatihah': {AppLocale.bm: 'Al-Fatihah', AppLocale.en: 'Al-Fatihah'},
-    'surah': {AppLocale.bm: 'Surah Pendek', AppLocale.en: 'Short Surah'},
     'rukukLabel': {AppLocale.bm: 'Rukuk', AppLocale.en: 'Ruku\''},
     'iktidalLabel': {AppLocale.bm: 'Iktidal', AppLocale.en: 'I\'tidal'},
     'sujudLabel': {AppLocale.bm: 'Sujud', AppLocale.en: 'Prostration'},
@@ -64,7 +62,7 @@ class AppStrings {
       AppLocale.en: 'Sitting Between Prostrations',
     },
     'saat': {AppLocale.bm: 'saat', AppLocale.en: 'sec'},
-    'minLabel': {AppLocale.bm: 'min', AppLocale.en: 'min'},
+    'asasLabel': {AppLocale.bm: 'asas', AppLocale.en: 'base'},
   };
 
   static String of(String key, AppLocale locale) {

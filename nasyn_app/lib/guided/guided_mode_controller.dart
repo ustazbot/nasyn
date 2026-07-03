@@ -45,9 +45,16 @@ class GuidedModeController extends ChangeNotifier {
   int get currentRakaat => engine.currentRakaat;
   bool get isComplete => engine.isComplete;
 
-  /// Timing dari Settings; clamped() jamin tak bawah floor
-  /// tumaninahDurations walau apa pun nilai masuk.
+  /// Timing dari Settings; clamped() jamin extra dalam [0, maxExtra] —
+  /// slow-down only, floor tumaninahDurations tak boleh dikurangkan.
   final TimingProfile _timing;
+
+  /// Durasi tuma'ninah efektif per posture: floor + extra dari Settings.
+  /// Default (tiada custom) = floor sedia ada.
+  late final Map<PrayerState, Duration> tumaninah = {
+    for (final state in tumaninahDurations.keys)
+      state: _timing.tumaninahFor(state)!,
+  };
 
   GuidedModeController({
     required PrayerConfig config,
@@ -107,15 +114,13 @@ class GuidedModeController extends ChangeNotifier {
       return;
     }
 
-    // Fixed-posture states. Profile Settings menang, floor tetap
-    // tumaninahDurations (clamp dalam TimingProfile).
-    final tumaninah = _timing.tumaninahFor(engine.currentState) ??
-        tumaninahDurations[engine.currentState]!;
+    // Fixed-posture states. Durasi efektif = floor + extra Settings.
+    final duration = tumaninah[engine.currentState]!;
     final isFullRecite = level == AssistanceLevel.fullRecite;
     if (isFullRecite && cue != null) {
       var tumaninahElapsed = false;
       var audioCompleted = false;
-      _timer = Timer(tumaninah, () {
+      _timer = Timer(duration, () {
         tumaninahElapsed = true;
         if (audioCompleted) _autoAdvance();
       });
@@ -124,7 +129,7 @@ class GuidedModeController extends ChangeNotifier {
         if (tumaninahElapsed) _autoAdvance();
       });
     } else {
-      _timer = Timer(tumaninah, _autoAdvance);
+      _timer = Timer(duration, _autoAdvance);
     }
   }
 

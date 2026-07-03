@@ -86,65 +86,36 @@ class SettingsScreen extends ConsumerWidget {
             ),
           ),
 
-          // ─── Panduan Masa ───
-          _SectionHeader(AppStrings.of('panduanMasa', locale)),
-          _TimingSlider(
-            label: AppStrings.of('fatihah', locale),
-            locale: locale,
-            value: timing.fatihahSeconds,
-            min: 20,
-            max: 90,
-            onChanged: (v) =>
-                _saveTiming(ref, timing.copyWith(fatihahSeconds: v)),
-          ),
-          _TimingSlider(
-            label: AppStrings.of('surah', locale),
-            locale: locale,
-            value: timing.surahSeconds,
-            min: 20,
-            max: 90,
-            onChanged: (v) =>
-                _saveTiming(ref, timing.copyWith(surahSeconds: v)),
-          ),
-          _TimingSlider(
+          // ─── Tambah Masa (slow-down only: extra atas floor) ───
+          _SectionHeader(AppStrings.of('tambahMasa', locale)),
+          _ExtraTimeSlider(
             label: AppStrings.of('rukukLabel', locale),
             locale: locale,
-            value: timing.rukukSeconds,
-            min: TimingProfile.rukukFloor,
-            max: 30,
-            floorNote: true,
-            onChanged: (v) =>
-                _saveTiming(ref, timing.copyWith(rukukSeconds: v)),
+            floor: TimingProfile.rukukFloor,
+            extra: timing.rukukExtra,
+            onChanged: (v) => _saveTiming(ref, timing.copyWith(rukukExtra: v)),
           ),
-          _TimingSlider(
+          _ExtraTimeSlider(
             label: AppStrings.of('iktidalLabel', locale),
             locale: locale,
-            value: timing.iktidalSeconds,
-            min: TimingProfile.iktidalFloor,
-            max: 30,
-            floorNote: true,
+            floor: TimingProfile.iktidalFloor,
+            extra: timing.iktidalExtra,
             onChanged: (v) =>
-                _saveTiming(ref, timing.copyWith(iktidalSeconds: v)),
+                _saveTiming(ref, timing.copyWith(iktidalExtra: v)),
           ),
-          _TimingSlider(
+          _ExtraTimeSlider(
             label: AppStrings.of('sujudLabel', locale),
             locale: locale,
-            value: timing.sujudSeconds,
-            min: TimingProfile.sujudFloor,
-            max: 30,
-            floorNote: true,
-            onChanged: (v) =>
-                _saveTiming(ref, timing.copyWith(sujudSeconds: v)),
+            floor: TimingProfile.sujudFloor,
+            extra: timing.sujudExtra,
+            onChanged: (v) => _saveTiming(ref, timing.copyWith(sujudExtra: v)),
           ),
-          _TimingSlider(
+          _ExtraTimeSlider(
             label: AppStrings.of('dudukLabel', locale),
             locale: locale,
-            value: timing.dudukSeconds,
-            min: TimingProfile.dudukFloor,
-            max: 30,
-            floorNote: true,
-            onChanged: (v) =>
-                _saveTiming(ref, timing.copyWith(dudukSeconds: v)),
+            floor: TimingProfile.dudukFloor,
+            extra: timing.dudukExtra,
+            onChanged: (v) => _saveTiming(ref, timing.copyWith(dudukExtra: v)),
           ),
           const SizedBox(height: 8),
           SizedBox(
@@ -223,27 +194,26 @@ class _SectionHeader extends StatelessWidget {
   }
 }
 
-class _TimingSlider extends StatelessWidget {
+/// Slider "Tambah Masa" — slow-down only. Nilai = extra saat atas
+/// floor (0 = ikut floor); slider secara fizikal tak boleh bawah 0.
+class _ExtraTimeSlider extends StatelessWidget {
   final String label;
   final AppLocale locale;
-  final int value;
-  final int min;
-  final int max;
-  final bool floorNote;
+  final int floor;
+  final int extra;
   final ValueChanged<int> onChanged;
 
-  const _TimingSlider({
+  const _ExtraTimeSlider({
     required this.label,
     required this.locale,
-    required this.value,
-    required this.min,
-    required this.max,
+    required this.floor,
+    required this.extra,
     required this.onChanged,
-    this.floorNote = false,
   });
 
   @override
   Widget build(BuildContext context) {
+    final saat = AppStrings.of('saat', locale);
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
       child: Column(
@@ -257,15 +227,13 @@ class _TimingSlider extends StatelessWidget {
                   fit: BoxFit.scaleDown,
                   alignment: Alignment.centerLeft,
                   child: Text(
-                    floorNote
-                        ? '$label (${AppStrings.of('minLabel', locale)} ${min}s)'
-                        : label,
+                    '$label (${AppStrings.of('asasLabel', locale)} ${floor}s)',
                     style: AppTextStyles.body.copyWith(fontSize: 32),
                   ),
                 ),
               ),
               Text(
-                '$value ${AppStrings.of('saat', locale)}',
+                '+$extra $saat',
                 style: AppTextStyles.body.copyWith(
                   fontSize: 32,
                   color: AppColors.accentGold,
@@ -278,10 +246,11 @@ class _TimingSlider extends StatelessWidget {
             height: 48, // tap target ≥48dp
             child: Slider(
               // clamp paparan — nilai haram dari luar tak boleh crash UI
-              value: value.clamp(min, max).toDouble(),
-              min: min.toDouble(),
-              max: max.toDouble(),
-              divisions: max - min,
+              value:
+                  extra.clamp(0, TimingProfile.maxExtra).toDouble(),
+              min: 0,
+              max: TimingProfile.maxExtra.toDouble(),
+              divisions: TimingProfile.maxExtra,
               activeColor: AppColors.accentGreen,
               inactiveColor: AppColors.surfaceMuted,
               onChanged: (v) => onChanged(v.round()),

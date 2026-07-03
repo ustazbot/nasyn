@@ -13,11 +13,7 @@ Widget _app({TimingProfile? timing}) => ProviderScope(
     );
 
 void main() {
-  setUp(() {
-    // Skrin panjang — guna viewport tinggi supaya semua seksyen dibina.
-  });
-
-  testWidgets('papar seksyen Bahasa, Panduan Masa, Mod Amaran', (tester) async {
+  testWidgets('papar seksyen Bahasa, Tambah Masa, Mod Amaran', (tester) async {
     tester.view.physicalSize = const Size(1080, 2400);
     tester.view.devicePixelRatio = 1.0;
     addTearDown(tester.view.reset);
@@ -25,24 +21,28 @@ void main() {
     await tester.pumpWidget(_app());
 
     expect(find.text('Bahasa'), findsOneWidget);
-    expect(find.text('Panduan Masa'), findsOneWidget);
+    expect(find.text('Tambah Masa'), findsOneWidget);
     expect(find.text('Bahasa Melayu'), findsOneWidget);
     expect(find.text('English'), findsOneWidget);
     expect(find.text('Reset ke Default'), findsOneWidget);
+    // Slow-down only: 4 slider posture sahaja, tiada Fatihah/Surah.
+    expect(find.byType(Slider), findsNWidgets(4));
+    expect(find.text('Al-Fatihah'), findsNothing);
+    expect(find.text('Surah Pendek'), findsNothing);
   });
 
-  testWidgets('profil bawah floor di-clamp bila skrin simpan semula',
+  testWidgets('extra negatif di-clamp ke 0 bila skrin simpan semula',
       (tester) async {
     tester.view.physicalSize = const Size(1080, 2400);
     tester.view.devicePixelRatio = 1.0;
     addTearDown(tester.view.reset);
 
-    // Suntik nilai haram (rukuk 2s) terus ke provider — slider min ialah
-    // floor, jadi UI sendiri tak boleh hasilkan nilai ni.
-    final hacked = TimingProfile.defaults.copyWith(rukukSeconds: 2);
+    // Suntik nilai haram (extra -2 = bawah floor) terus ke provider —
+    // slider min ialah 0, jadi UI sendiri tak boleh hasilkan nilai ni.
+    final hacked = TimingProfile.defaults.copyWith(rukukExtra: -2);
     await tester.pumpWidget(_app(timing: hacked));
 
-    // Tekan Reset ke Default — laluan simpan mesti clamp/pulih ke >= 4s.
+    // Tekan Reset ke Default — laluan simpan mesti pulih ke extra >= 0.
     await tester.tap(find.text('Reset ke Default'));
     await tester.pump();
 
@@ -50,8 +50,8 @@ void main() {
       tester.element(find.byType(SettingsScreen)),
     );
     expect(
-      container.read(timingProfileProvider).rukukSeconds,
-      greaterThanOrEqualTo(TimingProfile.rukukFloor),
+      container.read(timingProfileProvider).rukukExtra,
+      greaterThanOrEqualTo(0),
     );
   });
 
@@ -65,7 +65,7 @@ void main() {
     await tester.pump();
 
     expect(find.text('Language'), findsOneWidget);
-    expect(find.text('Guided Timing'), findsOneWidget);
+    expect(find.text('Add Time'), findsOneWidget);
     expect(find.text('Reset to Default'), findsOneWidget);
   });
 }

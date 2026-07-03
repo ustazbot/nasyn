@@ -1,25 +1,25 @@
 import '../guided/guided_mode_controller.dart';
 import '../prayer/prayer_state.dart';
 
-/// Profil masa Guided Mode. Nilai tuma'ninah TIDAK boleh bawah floor
-/// dalam [tumaninahDurations] (sumber tunggal — fiqh minimum + safety
-/// margin, sudah diverify dalam kod). Fatihah/Surah bebas dalam julat UI.
+/// Profil masa Guided Mode — slow-down only. User hanya boleh TAMBAH
+/// masa (0–10s) atas floor [tumaninahDurations]; floor immutable dan
+/// tak boleh dikurangkan. Simpan extra seconds, bukan durasi mutlak —
+/// elak floor drift kalau nilai floor berubah kemudian hari.
 class TimingProfile {
-  final int fatihahSeconds;
-  final int surahSeconds;
-  final int rukukSeconds;
-  final int iktidalSeconds;
-  final int sujudSeconds;
-  final int dudukSeconds;
+  final int rukukExtra;
+  final int iktidalExtra;
+  final int sujudExtra;
+  final int dudukExtra;
 
   const TimingProfile({
-    required this.fatihahSeconds,
-    required this.surahSeconds,
-    required this.rukukSeconds,
-    required this.iktidalSeconds,
-    required this.sujudSeconds,
-    required this.dudukSeconds,
+    required this.rukukExtra,
+    required this.iktidalExtra,
+    required this.sujudExtra,
+    required this.dudukExtra,
   });
+
+  /// Extra maksimum atas floor (cadangan task; ubah di sini sahaja).
+  static const int maxExtra = 10;
 
   // Floor dari tumaninahDurations — JANGAN hardcode nombor di sini.
   static final int rukukFloor =
@@ -31,56 +31,51 @@ class TimingProfile {
   static final int dudukFloor =
       tumaninahDurations[PrayerState.dudukAntaraSujud]!.inSeconds;
 
-  /// Default = floor kod semasa; behavior sesi tak berubah tanpa tetapan.
-  static final TimingProfile defaults = TimingProfile(
-    fatihahSeconds: 30,
-    surahSeconds: 20,
-    rukukSeconds: rukukFloor,
-    iktidalSeconds: iktidalFloor,
-    sujudSeconds: sujudFloor,
-    dudukSeconds: dudukFloor,
+  /// Default = tiada extra; behavior sesi sama macam floor kod.
+  static const TimingProfile defaults = TimingProfile(
+    rukukExtra: 0,
+    iktidalExtra: 0,
+    sujudExtra: 0,
+    dudukExtra: 0,
   );
 
-  /// Clamp semua nilai tuma'ninah ke floor — dipanggil pada setiap
-  /// laluan simpan DAN baca, jadi nilai bawah floor mustahil sampai
+  /// Clamp semua extra ke [0, maxExtra] — dipanggil pada setiap laluan
+  /// simpan DAN baca, jadi nilai negatif (bawah floor) mustahil sampai
   /// ke controller walau storage dirosakkan.
   TimingProfile clamped() => TimingProfile(
-        fatihahSeconds: fatihahSeconds.clamp(20, 90),
-        surahSeconds: surahSeconds.clamp(20, 90),
-        rukukSeconds: rukukSeconds < rukukFloor ? rukukFloor : rukukSeconds,
-        iktidalSeconds:
-            iktidalSeconds < iktidalFloor ? iktidalFloor : iktidalSeconds,
-        sujudSeconds: sujudSeconds < sujudFloor ? sujudFloor : sujudSeconds,
-        dudukSeconds: dudukSeconds < dudukFloor ? dudukFloor : dudukSeconds,
+        rukukExtra: rukukExtra.clamp(0, maxExtra),
+        iktidalExtra: iktidalExtra.clamp(0, maxExtra),
+        sujudExtra: sujudExtra.clamp(0, maxExtra),
+        dudukExtra: dudukExtra.clamp(0, maxExtra),
       );
 
   TimingProfile copyWith({
-    int? fatihahSeconds,
-    int? surahSeconds,
-    int? rukukSeconds,
-    int? iktidalSeconds,
-    int? sujudSeconds,
-    int? dudukSeconds,
+    int? rukukExtra,
+    int? iktidalExtra,
+    int? sujudExtra,
+    int? dudukExtra,
   }) =>
       TimingProfile(
-        fatihahSeconds: fatihahSeconds ?? this.fatihahSeconds,
-        surahSeconds: surahSeconds ?? this.surahSeconds,
-        rukukSeconds: rukukSeconds ?? this.rukukSeconds,
-        iktidalSeconds: iktidalSeconds ?? this.iktidalSeconds,
-        sujudSeconds: sujudSeconds ?? this.sujudSeconds,
-        dudukSeconds: dudukSeconds ?? this.dudukSeconds,
+        rukukExtra: rukukExtra ?? this.rukukExtra,
+        iktidalExtra: iktidalExtra ?? this.iktidalExtra,
+        sujudExtra: sujudExtra ?? this.sujudExtra,
+        dudukExtra: dudukExtra ?? this.dudukExtra,
       );
 
-  /// Duration tuma'ninah untuk state tertentu, atau null untuk state
-  /// yang bukan fixed-posture (qiyam, tahiyat, dll — kekal ikut
-  /// controller logic sedia ada).
-  Duration? tumaninahFor(PrayerState state) => switch (state) {
-        PrayerState.rukuk => Duration(seconds: rukukSeconds),
-        PrayerState.iktidal => Duration(seconds: iktidalSeconds),
-        PrayerState.sujud1 ||
-        PrayerState.sujud2 =>
-          Duration(seconds: sujudSeconds),
-        PrayerState.dudukAntaraSujud => Duration(seconds: dudukSeconds),
-        _ => null,
+  /// Extra seconds untuk state fixed-posture; 0 untuk state lain.
+  int extraFor(PrayerState state) => switch (state) {
+        PrayerState.rukuk => rukukExtra,
+        PrayerState.iktidal => iktidalExtra,
+        PrayerState.sujud1 || PrayerState.sujud2 => sujudExtra,
+        PrayerState.dudukAntaraSujud => dudukExtra,
+        _ => 0,
       };
+
+  /// Durasi tuma'ninah efektif (floor + extra) untuk state fixed-posture,
+  /// atau null untuk state bukan fixed-posture (qiyam, tahiyat, dll).
+  Duration? tumaninahFor(PrayerState state) {
+    final floor = tumaninahDurations[state];
+    if (floor == null) return null;
+    return floor + Duration(seconds: extraFor(state));
+  }
 }

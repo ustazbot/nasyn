@@ -14,38 +14,31 @@ class SettingsRepository {
 
   final SharedPreferences _prefs;
 
-  static const _kFatihah = 'timing.fatihah';
-  static const _kSurah = 'timing.surah';
-  static const _kRukuk = 'timing.rukuk';
-  static const _kIktidal = 'timing.iktidal';
-  static const _kSujud = 'timing.sujud';
-  static const _kDuduk = 'timing.duduk';
+  // Extra seconds atas floor, key per posture (bukan durasi mutlak —
+  // elak floor drift kalau nilai floor dalam kod berubah).
+  static const _kRukukExtra = 'timing.extra.rukuk';
+  static const _kIktidalExtra = 'timing.extra.iktidal';
+  static const _kSujudExtra = 'timing.extra.sujud';
+  static const _kDudukExtra = 'timing.extra.dudukAntaraSujud';
   static const _kAlertMode = 'alertMode';
   static const _kLocale = 'locale';
 
   static Future<SettingsRepository> load() async =>
       SettingsRepository(await SharedPreferences.getInstance());
 
-  TimingProfile readTimingProfile() {
-    final d = TimingProfile.defaults;
-    return TimingProfile(
-      fatihahSeconds: _prefs.getInt(_kFatihah) ?? d.fatihahSeconds,
-      surahSeconds: _prefs.getInt(_kSurah) ?? d.surahSeconds,
-      rukukSeconds: _prefs.getInt(_kRukuk) ?? d.rukukSeconds,
-      iktidalSeconds: _prefs.getInt(_kIktidal) ?? d.iktidalSeconds,
-      sujudSeconds: _prefs.getInt(_kSujud) ?? d.sujudSeconds,
-      dudukSeconds: _prefs.getInt(_kDuduk) ?? d.dudukSeconds,
-    ).clamped();
-  }
+  TimingProfile readTimingProfile() => TimingProfile(
+        rukukExtra: _prefs.getInt(_kRukukExtra) ?? 0,
+        iktidalExtra: _prefs.getInt(_kIktidalExtra) ?? 0,
+        sujudExtra: _prefs.getInt(_kSujudExtra) ?? 0,
+        dudukExtra: _prefs.getInt(_kDudukExtra) ?? 0,
+      ).clamped();
 
   Future<void> saveTimingProfile(TimingProfile profile) async {
     final p = profile.clamped();
-    await _prefs.setInt(_kFatihah, p.fatihahSeconds);
-    await _prefs.setInt(_kSurah, p.surahSeconds);
-    await _prefs.setInt(_kRukuk, p.rukukSeconds);
-    await _prefs.setInt(_kIktidal, p.iktidalSeconds);
-    await _prefs.setInt(_kSujud, p.sujudSeconds);
-    await _prefs.setInt(_kDuduk, p.dudukSeconds);
+    await _prefs.setInt(_kRukukExtra, p.rukukExtra);
+    await _prefs.setInt(_kIktidalExtra, p.iktidalExtra);
+    await _prefs.setInt(_kSujudExtra, p.sujudExtra);
+    await _prefs.setInt(_kDudukExtra, p.dudukExtra);
   }
 
   AlertMode readAlertMode() {

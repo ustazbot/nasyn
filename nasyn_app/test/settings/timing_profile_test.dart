@@ -15,31 +15,46 @@ void main() {
         tumaninahDurations[PrayerState.dudukAntaraSujud]!.inSeconds);
   });
 
-  test('clamped() tolak nilai bawah floor — Rukuk 2s jadi 4s', () {
+  test('clamped() tolak extra negatif — tak boleh bawah floor', () {
     final hacked = TimingProfile.defaults.copyWith(
-      rukukSeconds: 2,
-      iktidalSeconds: 1,
-      sujudSeconds: 0,
-      dudukSeconds: -5,
+      rukukExtra: -2,
+      iktidalExtra: -1,
+      sujudExtra: -10,
+      dudukExtra: -5,
     );
     final clamped = hacked.clamped();
 
-    expect(clamped.rukukSeconds, 4);
-    expect(clamped.iktidalSeconds, 3);
-    expect(clamped.sujudSeconds, 4);
-    expect(clamped.dudukSeconds, 3);
+    expect(clamped.rukukExtra, 0);
+    expect(clamped.iktidalExtra, 0);
+    expect(clamped.sujudExtra, 0);
+    expect(clamped.dudukExtra, 0);
+    // Durasi efektif kekal floor — floor immutable.
+    expect(clamped.tumaninahFor(PrayerState.rukuk),
+        tumaninahDurations[PrayerState.rukuk]);
   });
 
-  test('clamped() benarkan nilai atas floor', () {
-    final longer = TimingProfile.defaults.copyWith(rukukSeconds: 10);
-    expect(longer.clamped().rukukSeconds, 10);
+  test('clamped() had extra ke maxExtra', () {
+    final over = TimingProfile.defaults.copyWith(rukukExtra: 99);
+    expect(over.clamped().rukukExtra, TimingProfile.maxExtra);
   });
 
-  test('tumaninahFor memetakan state fixed-posture sahaja', () {
-    final p = TimingProfile.defaults.copyWith(sujudSeconds: 7);
-    expect(p.tumaninahFor(PrayerState.sujud1), const Duration(seconds: 7));
-    expect(p.tumaninahFor(PrayerState.sujud2), const Duration(seconds: 7));
+  test('tumaninahFor = floor + extra, fixed-posture sahaja', () {
+    final p = TimingProfile.defaults.copyWith(sujudExtra: 3);
+    expect(
+      p.tumaninahFor(PrayerState.sujud1),
+      tumaninahDurations[PrayerState.sujud1]! + const Duration(seconds: 3),
+    );
+    expect(
+      p.tumaninahFor(PrayerState.sujud2),
+      tumaninahDurations[PrayerState.sujud2]! + const Duration(seconds: 3),
+    );
     expect(p.tumaninahFor(PrayerState.qiyam), isNull);
     expect(p.tumaninahFor(PrayerState.qunut), isNull);
+  });
+
+  test('default = tiada extra, durasi efektif sama macam floor', () {
+    for (final entry in tumaninahDurations.entries) {
+      expect(TimingProfile.defaults.tumaninahFor(entry.key), entry.value);
+    }
   });
 }
