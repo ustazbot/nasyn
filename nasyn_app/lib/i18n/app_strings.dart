@@ -21,6 +21,10 @@ class AppStrings {
     'mula': {AppLocale.bm: 'MULA', AppLocale.en: 'START'},
     'home': {AppLocale.bm: 'LAMAN UTAMA', AppLocale.en: 'HOME'},
     'setting': {AppLocale.bm: 'TETAPAN', AppLocale.en: 'SETTING'},
+    'niatPlaying': {
+      AppLocale.bm: 'Niat sedang dimainkan',
+      AppLocale.en: 'Intention being played',
+    },
     'showRecitation': {
       AppLocale.bm: 'Tunjuk Bacaan',
       AppLocale.en: 'Show Recitation',

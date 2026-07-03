@@ -239,13 +239,15 @@ void main() {
 
       // Niat sedang main — takbir BELUM main, gate onComplete bukan timer.
       expect(audio.lastPlayedPath, NasynAudio.niatSubuh);
+      expect(controller.isPlayingNiat, isTrue);
       async.elapse(const Duration(seconds: 30));
       expect(controller.currentState, PrayerState.takbiratulIhram);
       expect(audio.lastPlayedPath, NasynAudio.niatSubuh);
 
-      // Niat habis → terus takbiratul ihram tanpa jeda.
+      // Niat habis → terus takbiratul ihram tanpa jeda, flag niat padam.
       audio.completeCurrent();
       async.flushMicrotasks();
+      expect(controller.isPlayingNiat, isFalse);
       expect(audio.lastPlayedPath, NasynAudio.takbiratulIhram);
 
       // Takbir habis → qiyam, aliran biasa sambung.

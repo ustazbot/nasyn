@@ -39,8 +39,13 @@ class GuidedModeController extends ChangeNotifier {
   Timer? _timer;
   StreamSubscription<void>? _audioCompleteSub;
   bool _isPaused = false;
+  bool _isPlayingNiat = false;
 
   bool get isPaused => _isPaused;
+
+  /// True semasa audio niat pre-session main — UI papar "Niat sedang
+  /// dimainkan", bukan state FSM (elak user angkat takbir awal).
+  bool get isPlayingNiat => _isPlayingNiat;
   PrayerState get currentState => engine.currentState;
   int get currentRakaat => engine.currentRakaat;
   bool get isComplete => engine.isComplete;
@@ -75,13 +80,15 @@ class GuidedModeController extends ChangeNotifier {
     this.niatCue,
     this.surahRakaat1,
     this.surahRakaat2,
-  })  : engine = PrayerStateEngine(config),
-        _timing = (timing ?? TimingProfile.defaults).clamped() {
+  }) : engine = PrayerStateEngine(config),
+       _timing = (timing ?? TimingProfile.defaults).clamped() {
     if (niatCue != null && !NasynAudio.isPendingRecording(niatCue!)) {
+      _isPlayingNiat = true;
       audioService.play(niatCue!);
       _audioCompleteSub = audioService.onComplete.listen((_) {
         _audioCompleteSub?.cancel();
         _enterState();
+        notifyListeners();
       });
     } else {
       _enterState();
@@ -89,6 +96,7 @@ class GuidedModeController extends ChangeNotifier {
   }
 
   void _enterState() {
+    _isPlayingNiat = false;
     _timer?.cancel();
     _audioCompleteSub?.cancel();
 

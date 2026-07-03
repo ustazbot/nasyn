@@ -44,6 +44,9 @@ const Map<PrayerState, String> _postureIconAssets = {
   PrayerState.qiyam: 'assets/images/poses/qiyam.png',
   PrayerState.salam:
       'assets/images/poses/duduk.png', // salam dibuat sambil duduk
+  // Iktidal & qunut dibuat berdiri — guna icon qiyam
+  PrayerState.iktidal: 'assets/images/poses/qiyam.png',
+  PrayerState.qunut: 'assets/images/poses/qiyam.png',
   PrayerState.rukuk: 'assets/images/poses/ruku.png',
   PrayerState.sujud1: 'assets/images/poses/sujud.png',
   PrayerState.sujud2: 'assets/images/poses/sujud.png',
@@ -321,52 +324,78 @@ class _PrayerSessionScreenState extends ConsumerState<PrayerSessionScreen> {
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    // BACKLOG: ring progress indicator — rujuk design session
-                    // 2 Julai 2026, bina hanya jika pilot feedback tunjuk
-                    // Takbir Only mode rasa "stuck"
-                    if (iconAsset != null)
-                      Container(
-                        width: 132,
-                        height: 132,
-                        decoration: const BoxDecoration(
-                          color: AppColors.surfaceMuted,
-                          shape: BoxShape.circle,
-                        ),
-                        child: Center(
-                          child: Image.asset(
-                            iconAsset,
-                            height: 96,
-                            color: AppColors.lightText,
+                    // Semasa niat pre-session main, papar penanda niat —
+                    // bukan state FSM (elak user angkat takbir sebelum
+                    // niat habis, rujuk PRD §10 Niat + Bersedia)
+                    if (controller.isPlayingNiat) ...[
+                      const Icon(
+                        Icons.volume_up,
+                        color: AppColors.accentGold,
+                        size: 64,
+                      ),
+                      const SizedBox(height: 16),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        child: FittedBox(
+                          fit: BoxFit.scaleDown,
+                          child: Text(
+                            AppStrings.of('niatPlaying', locale),
+                            textAlign: TextAlign.center,
+                            style: AppTextStyles.body.copyWith(
+                              fontSize: 36 * Responsive.scale(context),
+                            ),
                           ),
                         ),
                       ),
-                    const SizedBox(height: 16),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      child: FittedBox(
+                    ] else ...[
+                      // BACKLOG: ring progress indicator — rujuk design session
+                      // 2 Julai 2026, bina hanya jika pilot feedback tunjuk
+                      // Takbir Only mode rasa "stuck"
+                      if (iconAsset != null)
+                        Container(
+                          width: 132,
+                          height: 132,
+                          decoration: const BoxDecoration(
+                            color: AppColors.surfaceMuted,
+                            shape: BoxShape.circle,
+                          ),
+                          child: Center(
+                            child: Image.asset(
+                              iconAsset,
+                              height: 96,
+                              color: AppColors.lightText,
+                            ),
+                          ),
+                        ),
+                      const SizedBox(height: 16),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        child: FittedBox(
+                          fit: BoxFit.scaleDown,
+                          child: Text(
+                            (locale == AppLocale.bm
+                                    ? prayerStateLabelsBm
+                                    : prayerStateLabelsEn)[controller
+                                    .currentState] ??
+                                '',
+                            textAlign: TextAlign.center,
+                            style: AppTextStyles.display.copyWith(
+                              fontSize: 48 * Responsive.scale(context),
+                            ),
+                          ),
+                        ),
+                      ),
+                      FittedBox(
                         fit: BoxFit.scaleDown,
                         child: Text(
-                          (locale == AppLocale.bm
-                                  ? prayerStateLabelsBm
-                                  : prayerStateLabelsEn)[controller
-                                  .currentState] ??
+                          prayerStateLabelsArabic[controller.currentState] ??
                               '',
-                          textAlign: TextAlign.center,
-                          style: AppTextStyles.display.copyWith(
-                            fontSize: 48 * Responsive.scale(context),
+                          style: AppTextStyles.body.copyWith(
+                            fontSize: 36 * Responsive.scale(context),
                           ),
                         ),
                       ),
-                    ),
-                    FittedBox(
-                      fit: BoxFit.scaleDown,
-                      child: Text(
-                        prayerStateLabelsArabic[controller.currentState] ?? '',
-                        style: AppTextStyles.body.copyWith(
-                          fontSize: 36 * Responsive.scale(context),
-                        ),
-                      ),
-                    ),
+                    ],
                   ],
                 ),
               ),
