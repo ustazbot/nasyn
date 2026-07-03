@@ -120,12 +120,14 @@ class MainActivity : AppCompatActivity(), PoseLandmarkerHelper.Listener {
                 poseLandmarkerHelper?.detectAsync(
                     bitmap = bitmap,
                     rotationDegrees = rotationDegrees,
-                    isFrontCamera = true,
+                    isFrontCamera = false,
                     frameTimeMs = frameTimeMs,
                 )
             }
 
-            val cameraSelector = CameraSelector.DEFAULT_FRONT_CAMERA
+            // Spike v2 (§8.13): kamera BELAKANG, mounting rendah dekat
+            // sejadah menghala atas ke arah pengguna
+            val cameraSelector = CameraSelector.DEFAULT_BACK_CAMERA
 
             cameraProvider.unbindAll()
             cameraProvider.bindToLifecycle(this, cameraSelector, preview, imageAnalysis)

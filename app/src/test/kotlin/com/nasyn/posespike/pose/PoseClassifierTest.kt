@@ -62,4 +62,36 @@ class PoseClassifierTest {
         assertEquals(PoseClass.UNKNOWN, result.poseClass)
         assertEquals(0, result.confidence)
     }
+
+    // Spike v2 (§8.13): proximity — headY sama, saiz kepala beza
+    // (Sujud dekat lens = telinga jauh terpisah dalam frame)
+    @Test
+    fun `separates same-headY poses by head size (proximity signal)`() {
+        fun landmarksWithEarSpan(headY: Float, earSpan: Float): PoseLandmarks {
+            val half = earSpan / 2f
+            return PoseLandmarks(
+                nose = Point(0.5f, headY),
+                leftEar = Point(0.5f - half, headY),
+                rightEar = Point(0.5f + half, headY),
+                leftShoulder = Point(0.3f, headY + 0.1f),
+                rightShoulder = Point(0.7f, headY + 0.1f),
+            )
+        }
+        val calibration = CalibrationProfile()
+        calibration.recordBaseline(PoseClass.QIYAM, landmarksWithEarSpan(0.2f, 0.05f))
+        calibration.recordBaseline(PoseClass.RUKUK, landmarksWithEarSpan(0.4f, 0.10f))
+        // SUJUD & DUDUK: headY SAMA — hanya saiz kepala membezakan
+        calibration.recordBaseline(PoseClass.SUJUD, landmarksWithEarSpan(0.6f, 0.40f))
+        calibration.recordBaseline(PoseClass.DUDUK, landmarksWithEarSpan(0.6f, 0.12f))
+        val classifier = PoseClassifier(calibration)
+
+        assertEquals(
+            PoseClass.SUJUD,
+            classifier.classify(landmarksWithEarSpan(0.6f, 0.38f)).poseClass,
+        )
+        assertEquals(
+            PoseClass.DUDUK,
+            classifier.classify(landmarksWithEarSpan(0.6f, 0.13f)).poseClass,
+        )
+    }
 }

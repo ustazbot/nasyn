@@ -45,7 +45,10 @@ class ControlPanel(
             text = "✓ Correct"
             setOnClickListener {
                 val result = classificationProvider()
-                tallyLogger.log(result.poseClass, result.confidence, inferenceTimeMsProvider(), correct = true)
+                tallyLogger.log(
+                    result.poseClass, result.confidence, inferenceTimeMsProvider(),
+                    correct = true, landmarks = landmarksProvider(),
+                )
                 refreshSummary()
             }
         })
@@ -53,7 +56,10 @@ class ControlPanel(
             text = "✗ Wrong"
             setOnClickListener {
                 val result = classificationProvider()
-                tallyLogger.log(result.poseClass, result.confidence, inferenceTimeMsProvider(), correct = false)
+                tallyLogger.log(
+                    result.poseClass, result.confidence, inferenceTimeMsProvider(),
+                    correct = false, landmarks = landmarksProvider(),
+                )
                 refreshSummary()
             }
         })
