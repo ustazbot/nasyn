@@ -5,7 +5,8 @@ class PrayerConfig {
   final String displayName;
   final int rakaatCount;
   final int? tahiyatAwalAfterRakaat; // null = no tahiyat awal (Subuh/Sunat)
-  final bool qunutEligible; // Subuh only; qunut adalah aliran lalai (default flow) untuk Subuh
+  final bool
+  qunutEligible; // Subuh only; qunut adalah aliran lalai (default flow) untuk Subuh
 
   const PrayerConfig({
     required this.type,

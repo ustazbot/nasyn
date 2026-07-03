@@ -47,7 +47,10 @@ class SessionSummaryScreen extends ConsumerWidget {
               ElevatedButton(
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.accentGreen,
-                  padding: const EdgeInsets.symmetric(horizontal: 48, vertical: 16),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 48,
+                    vertical: 16,
+                  ),
                 ),
                 onPressed: () {
                   Navigator.of(context).pushAndRemoveUntil(

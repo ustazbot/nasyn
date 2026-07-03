@@ -13,8 +13,7 @@ Future<void> main() async {
     ProviderScope(
       overrides: [
         settingsRepositoryProvider.overrideWithValue(repo),
-        timingProfileProvider
-            .overrideWith((ref) => repo.readTimingProfile()),
+        timingProfileProvider.overrideWith((ref) => repo.readTimingProfile()),
         alertModeProvider.overrideWith((ref) => repo.readAlertMode()),
         appLocaleProvider.overrideWith((ref) => repo.readLocale()),
         surahRakaat1Provider.overrideWith((ref) => repo.readSurahRakaat1()),

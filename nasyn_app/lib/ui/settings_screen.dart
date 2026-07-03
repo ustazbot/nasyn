@@ -129,11 +129,38 @@ class SettingsScreen extends ConsumerWidget {
                 fit: BoxFit.scaleDown,
                 child: Text(
                   AppStrings.of('resetDefault', locale),
-                  style: AppTextStyles.body
-                      .copyWith(fontSize: 32, color: AppColors.accentGold),
+                  style: AppTextStyles.body.copyWith(
+                    fontSize: 32,
+                    color: AppColors.accentGold,
+                  ),
                 ),
               ),
             ),
+          ),
+
+          // ─── Tempoh Bacaan Sendiri (qiyam/tahiyat, level bukan Full
+          // Recite — pilot feedback 4 Julai: manual-Next = friction) ───
+          _SectionHeader(AppStrings.of('tempohBacaan', locale)),
+          Padding(
+            padding: const EdgeInsets.only(bottom: 12),
+            child: Text(
+              AppStrings.of('tempohBacaanNota', locale),
+              style: AppTextStyles.label.copyWith(fontSize: 24),
+            ),
+          ),
+          _ReadingTimeSlider(
+            label: AppStrings.of('qiyamBacaanLabel', locale),
+            locale: locale,
+            seconds: timing.qiyamReading,
+            onChanged: (v) =>
+                _saveTiming(ref, timing.copyWith(qiyamReading: v)),
+          ),
+          _ReadingTimeSlider(
+            label: AppStrings.of('tahiyatBacaanLabel', locale),
+            locale: locale,
+            seconds: timing.tahiyatReading,
+            onChanged: (v) =>
+                _saveTiming(ref, timing.copyWith(tahiyatReading: v)),
           ),
 
           // ─── Mod Amaran ───
@@ -152,8 +179,10 @@ class SettingsScreen extends ConsumerWidget {
                 final label = switch (mode) {
                   AlertMode.senyap => AppStrings.of('senyap', locale),
                   AlertMode.standard => AppStrings.of('standardMode', locale),
-                  AlertMode.pembelajaran =>
-                    AppStrings.of('pembelajaran', locale),
+                  AlertMode.pembelajaran => AppStrings.of(
+                    'pembelajaran',
+                    locale,
+                  ),
                 };
                 return RadioListTile<AlertMode>(
                   value: mode,
@@ -189,6 +218,73 @@ class _SectionHeader extends StatelessWidget {
           fontWeight: FontWeight.bold,
           color: AppColors.accentGreen,
         ),
+      ),
+    );
+  }
+}
+
+/// Slider "Tempoh Bacaan Sendiri" — 0 = manual (tunggu ⏩), selainnya
+/// app auto-maju selepas tempoh (step 5 saat, max [TimingProfile.maxReading]).
+class _ReadingTimeSlider extends StatelessWidget {
+  final String label;
+  final AppLocale locale;
+  final int seconds;
+  final ValueChanged<int> onChanged;
+
+  const _ReadingTimeSlider({
+    required this.label,
+    required this.locale,
+    required this.seconds,
+    required this.onChanged,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final value = seconds.clamp(0, TimingProfile.maxReading);
+    final display = value == 0
+        ? AppStrings.of('manualLabel', locale)
+        : '$value ${AppStrings.of('saat', locale)}';
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Expanded(
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    label,
+                    style: AppTextStyles.body.copyWith(fontSize: 32),
+                  ),
+                ),
+              ),
+              Text(
+                display,
+                style: AppTextStyles.body.copyWith(
+                  fontSize: 32,
+                  color: AppColors.accentGold,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
+          ),
+          SizedBox(
+            height: 48, // tap target ≥48dp
+            child: Slider(
+              value: value.toDouble(),
+              min: 0,
+              max: TimingProfile.maxReading.toDouble(),
+              divisions: TimingProfile.maxReading ~/ 5, // step 5 saat
+              activeColor: AppColors.accentGreen,
+              inactiveColor: AppColors.surfaceMuted,
+              onChanged: (v) => onChanged((v / 5).round() * 5),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -246,8 +342,7 @@ class _ExtraTimeSlider extends StatelessWidget {
             height: 48, // tap target ≥48dp
             child: Slider(
               // clamp paparan — nilai haram dari luar tak boleh crash UI
-              value:
-                  extra.clamp(0, TimingProfile.maxExtra).toDouble(),
+              value: extra.clamp(0, TimingProfile.maxExtra).toDouble(),
               min: 0,
               max: TimingProfile.maxExtra.toDouble(),
               divisions: TimingProfile.maxExtra,

@@ -9,27 +9,28 @@ import 'package:nasyn_app/ui/prayer_session_screen.dart';
 import '../support/fake_audio_service.dart';
 
 Widget _app() => ProviderScope(
-      overrides: [
-        guidedModeControllerProvider.overrideWith(
-          (ref, args) => GuidedModeController(
-            config: prayerConfigs[args.type]!,
-            level: args.level,
-            audioService: FakeAudioService(),
-            cueResolver: AudioCueResolver(),
-          ),
-        ),
-      ],
-      child: const MaterialApp(
-        home: PrayerSessionScreen(
-          prayerType: PrayerType.subuh,
-          level: AssistanceLevel.takbirOnly,
-        ),
+  overrides: [
+    guidedModeControllerProvider.overrideWith(
+      (ref, args) => GuidedModeController(
+        config: prayerConfigs[args.type]!,
+        level: args.level,
+        audioService: FakeAudioService(),
+        cueResolver: AudioCueResolver(),
       ),
-    );
+    ),
+  ],
+  child: const MaterialApp(
+    home: PrayerSessionScreen(
+      prayerType: PrayerType.subuh,
+      level: AssistanceLevel.takbirOnly,
+    ),
+  ),
+);
 
 void main() {
-  testWidgets('back sistem TIDAK keluar dari solat — dialog confirm muncul',
-      (tester) async {
+  testWidgets('back sistem TIDAK keluar dari solat — dialog confirm muncul', (
+    tester,
+  ) async {
     tester.view.physicalSize = const Size(1080, 2400);
     tester.view.devicePixelRatio = 1.0;
     addTearDown(tester.view.reset);

@@ -6,11 +6,11 @@ import 'package:nasyn_app/settings/timing_profile.dart';
 import 'package:nasyn_app/ui/settings_screen.dart';
 
 Widget _app({TimingProfile? timing}) => ProviderScope(
-      overrides: [
-        if (timing != null) timingProfileProvider.overrideWith((ref) => timing),
-      ],
-      child: const MaterialApp(home: SettingsScreen()),
-    );
+  overrides: [
+    if (timing != null) timingProfileProvider.overrideWith((ref) => timing),
+  ],
+  child: const MaterialApp(home: SettingsScreen()),
+);
 
 void main() {
   testWidgets('papar seksyen Bahasa, Tambah Masa, Mod Amaran', (tester) async {
@@ -25,14 +25,17 @@ void main() {
     expect(find.text('Bahasa Melayu'), findsOneWidget);
     expect(find.text('English'), findsOneWidget);
     expect(find.text('Reset ke Default'), findsOneWidget);
-    // Slow-down only: 4 slider posture sahaja, tiada Fatihah/Surah.
-    expect(find.byType(Slider), findsNWidgets(4));
+    // 4 slider tuma'ninah (slow-down only) + 2 slider Tempoh Bacaan
+    // Sendiri (qiyam/tahiyat); tiada Fatihah/Surah.
+    expect(find.byType(Slider), findsNWidgets(6));
+    expect(find.text('Tempoh Bacaan Sendiri'), findsOneWidget);
     expect(find.text('Al-Fatihah'), findsNothing);
     expect(find.text('Surah Pendek'), findsNothing);
   });
 
-  testWidgets('extra negatif di-clamp ke 0 bila skrin simpan semula',
-      (tester) async {
+  testWidgets('extra negatif di-clamp ke 0 bila skrin simpan semula', (
+    tester,
+  ) async {
     tester.view.physicalSize = const Size(1080, 2400);
     tester.view.devicePixelRatio = 1.0;
     addTearDown(tester.view.reset);

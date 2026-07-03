@@ -23,9 +23,9 @@ class _BootScreenState extends State<BootScreen> {
     super.initState();
     _timer = Timer(const Duration(seconds: 4), () {
       if (!mounted) return;
-      Navigator.of(context).pushReplacement(
-        MaterialPageRoute(builder: (_) => const HomeScreen()),
-      );
+      Navigator.of(
+        context,
+      ).pushReplacement(MaterialPageRoute(builder: (_) => const HomeScreen()));
     });
   }
 

@@ -10,14 +10,17 @@ final settingsRepositoryProvider = Provider<SettingsRepository>(
   (ref) => throw UnimplementedError('override dalam main()'),
 );
 
-final timingProfileProvider =
-    StateProvider<TimingProfile>((ref) => TimingProfile.defaults);
+final timingProfileProvider = StateProvider<TimingProfile>(
+  (ref) => TimingProfile.defaults,
+);
 
 final alertModeProvider = StateProvider<AlertMode>((ref) => AlertMode.senyap);
 
 // Surah selepas Fatihah (Full Recite). Default = gandingan sunnah biasa;
 // di-override dalam main() dengan pilihan terakhir dari prefs.
-final surahRakaat1Provider =
-    StateProvider<String>((ref) => NasynAudio.alKafirun);
-final surahRakaat2Provider =
-    StateProvider<String>((ref) => NasynAudio.alIkhlas);
+final surahRakaat1Provider = StateProvider<String>(
+  (ref) => NasynAudio.alKafirun,
+);
+final surahRakaat2Provider = StateProvider<String>(
+  (ref) => NasynAudio.alIkhlas,
+);

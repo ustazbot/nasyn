@@ -159,10 +159,16 @@ class GuidedModeController extends ChangeNotifier {
       final isFullRecite = level == AssistanceLevel.fullRecite;
       if (cues.isNotEmpty) {
         // Full Recite: advance selepas SEMUA dalam senarai habis;
-        // level lain: cue main tapi tunggu manual Next.
+        // level lain: cue main tapi tak jadi gate advance.
         _playSequence(cues, isFullRecite ? _autoAdvance : () {});
       }
-      // else: manual Next only, no timer/subscription armed.
+      if (!isFullRecite) {
+        // Tempoh Bacaan Sendiri dari Settings (pilot feedback 4 Julai:
+        // manual-Next pada setiap qiyam/tahiyat = friction). null/0 =
+        // manual (tunggu ⏩, behavior asal); ⏩ sentiasa boleh maju awal.
+        final reading = _timing.readingDurationFor(engine.currentState);
+        if (reading != null) _timer = Timer(reading, _autoAdvance);
+      }
       return;
     }
 

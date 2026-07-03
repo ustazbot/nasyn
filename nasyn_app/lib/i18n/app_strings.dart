@@ -21,6 +21,24 @@ class AppStrings {
     'mula': {AppLocale.bm: 'MULA', AppLocale.en: 'START'},
     'home': {AppLocale.bm: 'LAMAN UTAMA', AppLocale.en: 'HOME'},
     'setting': {AppLocale.bm: 'TETAPAN', AppLocale.en: 'SETTING'},
+    'tempohBacaan': {
+      AppLocale.bm: 'Tempoh Bacaan Sendiri',
+      AppLocale.en: 'Own Recitation Duration',
+    },
+    'tempohBacaanNota': {
+      AppLocale.bm:
+          'Untuk Takbir Sahaja & Panduan Posisi — app tunggu '
+          'anda habis baca, kemudian maju sendiri. 0 = tunggu butang ⏩.',
+      AppLocale.en:
+          'For Takbir Only & Position Guide — the app waits for '
+          'you to finish reciting, then advances. 0 = wait for ⏩ button.',
+    },
+    'qiyamBacaanLabel': {
+      AppLocale.bm: 'Qiyam (Fatihah + surah)',
+      AppLocale.en: 'Qiyam (Fatihah + surah)',
+    },
+    'tahiyatBacaanLabel': {AppLocale.bm: 'Tahiyat', AppLocale.en: 'Tashahhud'},
+    'manualLabel': {AppLocale.bm: 'Manual (⏩)', AppLocale.en: 'Manual (⏩)'},
     'niatPlaying': {
       AppLocale.bm: 'Niat sedang dimainkan',
       AppLocale.en: 'Intention being played',
@@ -46,10 +64,7 @@ class AppStrings {
     'ya': {AppLocale.bm: 'Ya', AppLocale.en: 'Yes'},
     'batal': {AppLocale.bm: 'Batal', AppLocale.en: 'Cancel'},
     'bahasa': {AppLocale.bm: 'Bahasa', AppLocale.en: 'Language'},
-    'tambahMasa': {
-      AppLocale.bm: 'Tambah Masa',
-      AppLocale.en: 'Add Time',
-    },
+    'tambahMasa': {AppLocale.bm: 'Tambah Masa', AppLocale.en: 'Add Time'},
     'modAmaran': {AppLocale.bm: 'Mod Amaran', AppLocale.en: 'Alert Mode'},
     'senyap': {AppLocale.bm: 'Senyap', AppLocale.en: 'Silent'},
     'standardMode': {AppLocale.bm: 'Standard', AppLocale.en: 'Standard'},

@@ -7,8 +7,8 @@ enum AssistanceLevel { takbirOnly, panduanPosisi, fullRecite }
 class AudioCueResolver {
   static const Set<PrayerState> _noTakbirTransition = {
     PrayerState.takbiratulIhram, // it IS the opening takbir
-    PrayerState.iktidal,          // uses its own "Sami'Allahu" cue instead
-    PrayerState.qunut,            // masih berdiri iktidal — tiada takbir
+    PrayerState.iktidal, // uses its own "Sami'Allahu" cue instead
+    PrayerState.qunut, // masih berdiri iktidal — tiada takbir
     PrayerState.salam,
     PrayerState.selesai,
   };

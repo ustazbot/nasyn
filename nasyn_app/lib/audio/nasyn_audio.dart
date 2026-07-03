@@ -52,9 +52,28 @@ class NasynAudio {
 
   /// Senarai penuh surah pendek untuk pemilihan (lepas Al-Fatihah)
   static const List<String> surahPendek = [
-    adDhuha, alInshirah, atTin, alAlaq, alQadr, alBayyinah, azZalzalah,
-    alAdiyat, alQariah, atTakathur, alAsr, alHumazah, alFil, quraish,
-    alMaun, alKautsar, alKafirun, anNasr, alLahab, alIkhlas, alFalaq, anNas,
+    adDhuha,
+    alInshirah,
+    atTin,
+    alAlaq,
+    alQadr,
+    alBayyinah,
+    azZalzalah,
+    alAdiyat,
+    alQariah,
+    atTakathur,
+    alAsr,
+    alHumazah,
+    alFil,
+    quraish,
+    alMaun,
+    alKautsar,
+    alKafirun,
+    anNasr,
+    alLahab,
+    alIkhlas,
+    alFalaq,
+    anNas,
   ];
 
   // ─── Quran — Al-Misyari (alt reciter, subset) ───
@@ -76,7 +95,8 @@ class NasynAudio {
   static const String tahiyatAwal = '${_rukun}tahiyat-awal.mp3';
   static const String tahiyatAkhir = '${_rukun}tahiyat-akhir.mp3';
   static const String salam = '${_rukun}salam.mp3';
-  static const String qunut = '${_rukun}qunut.mp3'; // Subuh sahaja — aliran lalai rakaat ke-2, selepas iktidal
+  static const String qunut =
+      '${_rukun}qunut.mp3'; // Subuh sahaja — aliran lalai rakaat ke-2, selepas iktidal
   // Direkod 2 Julai 2026 — belum diwire ke resolver & belum masuk senarai
   // approved (keputusan Bos).
   static const String doaIftitah = '${_rukun}doa-iftitah.mp3';
@@ -118,9 +138,7 @@ class NasynAudio {
 
   static const String handoverNotis = '${_rukun}handover-notis.mp3';
 
-  static const List<String> needRecording = [
-    handoverNotis,
-  ];
+  static const List<String> needRecording = [handoverNotis];
 
   /// Bacaan rukun — APPROVED (kelulusan syariah/perundangan Islam pemilik
   /// produk, JMWP dimaklumkan 1 Julai 2026). Disimpan sebagai rekod audit

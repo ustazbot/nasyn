@@ -5,14 +5,22 @@ import 'package:nasyn_app/settings/timing_profile.dart';
 
 void main() {
   test('floor diambil dari tumaninahDurations, bukan hardcode', () {
-    expect(TimingProfile.rukukFloor,
-        tumaninahDurations[PrayerState.rukuk]!.inSeconds);
-    expect(TimingProfile.iktidalFloor,
-        tumaninahDurations[PrayerState.iktidal]!.inSeconds);
-    expect(TimingProfile.sujudFloor,
-        tumaninahDurations[PrayerState.sujud1]!.inSeconds);
-    expect(TimingProfile.dudukFloor,
-        tumaninahDurations[PrayerState.dudukAntaraSujud]!.inSeconds);
+    expect(
+      TimingProfile.rukukFloor,
+      tumaninahDurations[PrayerState.rukuk]!.inSeconds,
+    );
+    expect(
+      TimingProfile.iktidalFloor,
+      tumaninahDurations[PrayerState.iktidal]!.inSeconds,
+    );
+    expect(
+      TimingProfile.sujudFloor,
+      tumaninahDurations[PrayerState.sujud1]!.inSeconds,
+    );
+    expect(
+      TimingProfile.dudukFloor,
+      tumaninahDurations[PrayerState.dudukAntaraSujud]!.inSeconds,
+    );
   });
 
   test('clamped() tolak extra negatif — tak boleh bawah floor', () {
@@ -29,8 +37,10 @@ void main() {
     expect(clamped.sujudExtra, 0);
     expect(clamped.dudukExtra, 0);
     // Durasi efektif kekal floor — floor immutable.
-    expect(clamped.tumaninahFor(PrayerState.rukuk),
-        tumaninahDurations[PrayerState.rukuk]);
+    expect(
+      clamped.tumaninahFor(PrayerState.rukuk),
+      tumaninahDurations[PrayerState.rukuk],
+    );
   });
 
   test('clamped() had extra ke maxExtra', () {

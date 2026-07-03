@@ -5,6 +5,7 @@ import 'package:nasyn_app/audio/nasyn_audio.dart';
 import 'package:nasyn_app/guided/guided_mode_controller.dart';
 import 'package:nasyn_app/prayer/prayer_config.dart';
 import 'package:nasyn_app/prayer/prayer_state.dart';
+import 'package:nasyn_app/settings/timing_profile.dart';
 
 import '../support/fake_audio_service.dart';
 
@@ -460,6 +461,59 @@ void main() {
       audio.completeCurrent();
       async.flushMicrotasks();
       expect(controller.currentState, PrayerState.sujud1);
+    });
+  });
+
+  test(
+    'Tempoh Bacaan: qiyam auto-maju ikut timer Settings (Panduan Posisi)',
+    () {
+      fakeAsync((async) {
+        final audio = FakeAudioService();
+        final controller = GuidedModeController(
+          config: prayerConfigs[PrayerType.subuh]!,
+          level: AssistanceLevel.panduanPosisi,
+          audioService: audio,
+          cueResolver: AudioCueResolver(),
+          timing: const TimingProfile(
+            rukukExtra: 0,
+            iktidalExtra: 0,
+            sujudExtra: 0,
+            dudukExtra: 0,
+            qiyamReading: 45,
+          ),
+        );
+
+        audio.completeCurrent(); // takbiratulIhram -> qiyam
+        async.flushMicrotasks();
+        expect(controller.currentState, PrayerState.qiyam);
+
+        // Belum cukup tempoh bacaan — kekal qiyam
+        async.elapse(const Duration(seconds: 44));
+        expect(controller.currentState, PrayerState.qiyam);
+
+        // 45s: auto-maju tanpa perlu tekan Next
+        async.elapse(const Duration(seconds: 1));
+        expect(controller.currentState, PrayerState.rukuk);
+      });
+    },
+  );
+
+  test('Tempoh Bacaan 0 (default): qiyam kekal manual — tunggu Next', () {
+    fakeAsync((async) {
+      final audio = FakeAudioService();
+      final controller = GuidedModeController(
+        config: prayerConfigs[PrayerType.subuh]!,
+        level: AssistanceLevel.panduanPosisi,
+        audioService: audio,
+        cueResolver: AudioCueResolver(),
+      );
+
+      audio.completeCurrent();
+      async.flushMicrotasks();
+      expect(controller.currentState, PrayerState.qiyam);
+
+      async.elapse(const Duration(minutes: 5));
+      expect(controller.currentState, PrayerState.qiyam); // tak auto-maju
     });
   });
 }

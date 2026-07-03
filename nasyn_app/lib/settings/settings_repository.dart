@@ -1,5 +1,6 @@
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../audio/audio_cue_resolver.dart';
 import '../audio/nasyn_audio.dart';
 import '../i18n/app_locale.dart';
 import 'timing_profile.dart';
@@ -21,6 +22,8 @@ class SettingsRepository {
   static const _kIktidalExtra = 'timing.extra.iktidal';
   static const _kSujudExtra = 'timing.extra.sujud';
   static const _kDudukExtra = 'timing.extra.dudukAntaraSujud';
+  static const _kQiyamReading = 'timing.reading.qiyam';
+  static const _kTahiyatReading = 'timing.reading.tahiyat';
   static const _kAlertMode = 'alertMode';
   static const _kLocale = 'locale';
   static const _kSurahRakaat1 = 'lastSurahRakaat1';
@@ -30,11 +33,13 @@ class SettingsRepository {
       SettingsRepository(await SharedPreferences.getInstance());
 
   TimingProfile readTimingProfile() => TimingProfile(
-        rukukExtra: _prefs.getInt(_kRukukExtra) ?? 0,
-        iktidalExtra: _prefs.getInt(_kIktidalExtra) ?? 0,
-        sujudExtra: _prefs.getInt(_kSujudExtra) ?? 0,
-        dudukExtra: _prefs.getInt(_kDudukExtra) ?? 0,
-      ).clamped();
+    rukukExtra: _prefs.getInt(_kRukukExtra) ?? 0,
+    iktidalExtra: _prefs.getInt(_kIktidalExtra) ?? 0,
+    sujudExtra: _prefs.getInt(_kSujudExtra) ?? 0,
+    dudukExtra: _prefs.getInt(_kDudukExtra) ?? 0,
+    qiyamReading: _prefs.getInt(_kQiyamReading) ?? 0,
+    tahiyatReading: _prefs.getInt(_kTahiyatReading) ?? 0,
+  ).clamped();
 
   Future<void> saveTimingProfile(TimingProfile profile) async {
     final p = profile.clamped();
@@ -42,13 +47,13 @@ class SettingsRepository {
     await _prefs.setInt(_kIktidalExtra, p.iktidalExtra);
     await _prefs.setInt(_kSujudExtra, p.sujudExtra);
     await _prefs.setInt(_kDudukExtra, p.dudukExtra);
+    await _prefs.setInt(_kQiyamReading, p.qiyamReading);
+    await _prefs.setInt(_kTahiyatReading, p.tahiyatReading);
   }
 
   AlertMode readAlertMode() {
     final name = _prefs.getString(_kAlertMode);
-    return AlertMode.values
-            .where((m) => m.name == name)
-            .firstOrNull ??
+    return AlertMode.values.where((m) => m.name == name).firstOrNull ??
         AlertMode.senyap;
   }
 
@@ -73,6 +78,19 @@ class SettingsRepository {
   // Guard nilai lama/rosak dalam prefs — mesti wujud dalam senarai rasmi.
   String? _validSurah(String? path) =>
       NasynAudio.surahPendek.contains(path) ? path : null;
+
+  // Level bantuan — persist supaya "set sekali" kekal antara sesi
+  // (pilot 4 Julai: level reset ke default selepas setiap sesi).
+  static const _kAssistanceLevel = 'assistanceLevel';
+
+  AssistanceLevel readAssistanceLevel() {
+    final name = _prefs.getString(_kAssistanceLevel);
+    return AssistanceLevel.values.where((l) => l.name == name).firstOrNull ??
+        AssistanceLevel.fullRecite;
+  }
+
+  Future<void> saveAssistanceLevel(AssistanceLevel level) =>
+      _prefs.setString(_kAssistanceLevel, level.name);
 
   AppLocale readLocale() {
     final name = _prefs.getString(_kLocale);

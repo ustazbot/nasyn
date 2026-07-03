@@ -7,9 +7,7 @@ import 'package:nasyn_app/ui/home_screen.dart';
 void main() {
   testWidgets('auto-navigates to Home after its timer elapses', (tester) async {
     await tester.pumpWidget(
-      const ProviderScope(
-        child: MaterialApp(home: BootScreen()),
-      ),
+      const ProviderScope(child: MaterialApp(home: BootScreen())),
     );
 
     expect(find.byType(BootScreen), findsOneWidget);

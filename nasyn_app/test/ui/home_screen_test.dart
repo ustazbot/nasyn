@@ -13,9 +13,7 @@ void main() {
     addTearDown(tester.view.reset);
 
     await tester.pumpWidget(
-      const ProviderScope(
-        child: MaterialApp(home: HomeScreen()),
-      ),
+      const ProviderScope(child: MaterialApp(home: HomeScreen())),
     );
 
     expect(find.text('GUIDED MODE'), findsOneWidget);

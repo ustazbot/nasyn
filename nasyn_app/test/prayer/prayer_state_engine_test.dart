@@ -81,15 +81,21 @@ void main() {
       // Rakaat 1: iktidal terus ke sujud1, TIADA qunut.
       final r1 = visited.where((v) => v.$2 == 1).map((v) => v.$1).toList();
       final r1Iktidal = r1.indexOf(PrayerState.iktidal);
-      expect(r1[r1Iktidal + 1], PrayerState.sujud1,
-          reason: 'rakaat 1 mesti terus iktidal → sujud1');
+      expect(
+        r1[r1Iktidal + 1],
+        PrayerState.sujud1,
+        reason: 'rakaat 1 mesti terus iktidal → sujud1',
+      );
       expect(r1, isNot(contains(PrayerState.qunut)));
 
       // Rakaat 2: iktidal → qunut → sujud1.
       final r2 = visited.where((v) => v.$2 == 2).map((v) => v.$1).toList();
       final r2Iktidal = r2.indexOf(PrayerState.iktidal);
-      expect(r2[r2Iktidal + 1], PrayerState.qunut,
-          reason: 'Subuh rakaat 2 mesti laluan qunut selepas iktidal');
+      expect(
+        r2[r2Iktidal + 1],
+        PrayerState.qunut,
+        reason: 'Subuh rakaat 2 mesti laluan qunut selepas iktidal',
+      );
       expect(r2[r2Iktidal + 2], PrayerState.sujud1);
     });
 
@@ -108,27 +114,30 @@ void main() {
       expect(engine.currentRakaat, 1);
     });
 
-    test('previous() from sujud1 on rakaat 2 returns to qunut, rakaat 1 to iktidal', () {
-      final engine = PrayerStateEngine(prayerConfigs[PrayerType.subuh]!);
+    test(
+      'previous() from sujud1 on rakaat 2 returns to qunut, rakaat 1 to iktidal',
+      () {
+        final engine = PrayerStateEngine(prayerConfigs[PrayerType.subuh]!);
 
-      // Rakaat 1: advance sampai sujud1, previous → iktidal.
-      while (engine.currentState != PrayerState.sujud1) {
-        engine.advance();
-      }
-      engine.previous();
-      expect(engine.currentState, PrayerState.iktidal);
-      engine.advance(); // balik ke sujud1
+        // Rakaat 1: advance sampai sujud1, previous → iktidal.
+        while (engine.currentState != PrayerState.sujud1) {
+          engine.advance();
+        }
+        engine.previous();
+        expect(engine.currentState, PrayerState.iktidal);
+        engine.advance(); // balik ke sujud1
 
-      // Rakaat 2: advance sampai sujud1, previous → qunut.
-      while (!(engine.currentState == PrayerState.sujud1 &&
-          engine.currentRakaat == 2)) {
-        engine.advance();
-      }
-      engine.previous();
-      expect(engine.currentState, PrayerState.qunut);
-      engine.previous();
-      expect(engine.currentState, PrayerState.iktidal);
-    });
+        // Rakaat 2: advance sampai sujud1, previous → qunut.
+        while (!(engine.currentState == PrayerState.sujud1 &&
+            engine.currentRakaat == 2)) {
+          engine.advance();
+        }
+        engine.previous();
+        expect(engine.currentState, PrayerState.qunut);
+        engine.previous();
+        expect(engine.currentState, PrayerState.iktidal);
+      },
+    );
 
     test('never enters dudukTahiyatAwal', () {
       final engine = PrayerStateEngine(prayerConfigs[PrayerType.subuh]!);
@@ -160,27 +169,31 @@ void main() {
   });
 
   group('PrayerStateEngine - Maghrib (3 rakaat, tahiyat awal after 2)', () {
-    test('fires tahiyat awal after rakaat 2 and tahiyat akhir after rakaat 3', () {
-      final engine = PrayerStateEngine(prayerConfigs[PrayerType.maghrib]!);
+    test(
+      'fires tahiyat awal after rakaat 2 and tahiyat akhir after rakaat 3',
+      () {
+        final engine = PrayerStateEngine(prayerConfigs[PrayerType.maghrib]!);
 
-      var sawTahiyatAwal = false;
-      while (!engine.isComplete) {
-        engine.advance();
-        if (engine.currentState == PrayerState.dudukTahiyatAwal) {
-          sawTahiyatAwal = true;
-          expect(
-            engine.currentRakaat,
-            2,
-            reason: 'BUG #1: tahiyat awal must fire after rakaat 2, not rakaat 1',
-          );
+        var sawTahiyatAwal = false;
+        while (!engine.isComplete) {
+          engine.advance();
+          if (engine.currentState == PrayerState.dudukTahiyatAwal) {
+            sawTahiyatAwal = true;
+            expect(
+              engine.currentRakaat,
+              2,
+              reason:
+                  'BUG #1: tahiyat awal must fire after rakaat 2, not rakaat 1',
+            );
+          }
+          if (engine.currentState == PrayerState.dudukTahiyatAkhir) {
+            expect(engine.currentRakaat, 3);
+          }
         }
-        if (engine.currentState == PrayerState.dudukTahiyatAkhir) {
-          expect(engine.currentRakaat, 3);
-        }
-      }
 
-      expect(sawTahiyatAwal, isTrue);
-      expect(engine.currentRakaat, 3);
-    });
+        expect(sawTahiyatAwal, isTrue);
+        expect(engine.currentRakaat, 3);
+      },
+    );
   });
 }

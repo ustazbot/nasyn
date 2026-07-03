@@ -7,8 +7,8 @@ class PrayerStateEngine {
   int currentRakaat;
 
   PrayerStateEngine(this.config)
-      : currentState = PrayerState.takbiratulIhram,
-        currentRakaat = 1;
+    : currentState = PrayerState.takbiratulIhram,
+      currentRakaat = 1;
 
   static const List<PrayerState> _postureSequence = [
     PrayerState.qiyam,

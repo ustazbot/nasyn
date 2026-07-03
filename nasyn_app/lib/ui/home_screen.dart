@@ -10,6 +10,7 @@ import '../theme/app_colors.dart';
 import '../theme/app_text_styles.dart';
 import '../theme/responsive.dart';
 import 'prayer_session_screen.dart';
+import '../settings/settings_providers.dart';
 import 'settings_screen.dart';
 import 'surah_selection_screen.dart';
 
@@ -22,6 +23,25 @@ class HomeScreen extends ConsumerStatefulWidget {
 
 class _HomeScreenState extends ConsumerState<HomeScreen> {
   AssistanceLevel _selectedLevel = AssistanceLevel.fullRecite;
+
+  @override
+  void initState() {
+    super.initState();
+    // Persist "set sekali": pulihkan level terakhir dari prefs
+    // (repo tiada dalam widget test — best-effort).
+    try {
+      _selectedLevel = ref
+          .read(settingsRepositoryProvider)
+          .readAssistanceLevel();
+    } catch (_) {}
+  }
+
+  void _selectLevel(AssistanceLevel level) {
+    setState(() => _selectedLevel = level);
+    try {
+      ref.read(settingsRepositoryProvider).saveAssistanceLevel(level);
+    } catch (_) {}
+  }
 
   // Elak mis-tap pilih solat salah — confirm dulu sebelum mula sesi.
   Future<void> _confirmStart(
@@ -88,7 +108,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             _AssistanceSpectrum(
               locale: locale,
               selected: _selectedLevel,
-              onChanged: (level) => setState(() => _selectedLevel = level),
+              onChanged: _selectLevel,
             ),
             Expanded(
               child: GridView.count(

@@ -11,15 +11,28 @@ class TimingProfile {
   final int sujudExtra;
   final int dudukExtra;
 
+  /// Tempoh Bacaan Sendiri (saat) untuk state bacaan-sendiri dalam level
+  /// Takbir Sahaja/Panduan Posisi — user set ikut kelajuan bacaan sendiri,
+  /// app auto-maju bila tempoh habis (⏩ masih boleh maju awal).
+  /// 0 = manual (tunggu ⏩, behavior asal). Full Recite tak guna nilai ni
+  /// (audio bacaan sendiri yang jadi gate).
+  final int qiyamReading; // qiyam & qunut
+  final int tahiyatReading; // tahiyat awal & akhir
+
   const TimingProfile({
     required this.rukukExtra,
     required this.iktidalExtra,
     required this.sujudExtra,
     required this.dudukExtra,
+    this.qiyamReading = 0,
+    this.tahiyatReading = 0,
   });
 
   /// Extra maksimum atas floor (cadangan task; ubah di sini sahaja).
   static const int maxExtra = 10;
+
+  /// Tempoh Bacaan Sendiri maksimum (saat).
+  static const int maxReading = 120;
 
   // Floor dari tumaninahDurations — JANGAN hardcode nombor di sini.
   static final int rukukFloor =
@@ -43,33 +56,50 @@ class TimingProfile {
   /// simpan DAN baca, jadi nilai negatif (bawah floor) mustahil sampai
   /// ke controller walau storage dirosakkan.
   TimingProfile clamped() => TimingProfile(
-        rukukExtra: rukukExtra.clamp(0, maxExtra),
-        iktidalExtra: iktidalExtra.clamp(0, maxExtra),
-        sujudExtra: sujudExtra.clamp(0, maxExtra),
-        dudukExtra: dudukExtra.clamp(0, maxExtra),
-      );
+    rukukExtra: rukukExtra.clamp(0, maxExtra),
+    iktidalExtra: iktidalExtra.clamp(0, maxExtra),
+    sujudExtra: sujudExtra.clamp(0, maxExtra),
+    dudukExtra: dudukExtra.clamp(0, maxExtra),
+    qiyamReading: qiyamReading.clamp(0, maxReading),
+    tahiyatReading: tahiyatReading.clamp(0, maxReading),
+  );
 
   TimingProfile copyWith({
     int? rukukExtra,
     int? iktidalExtra,
     int? sujudExtra,
     int? dudukExtra,
-  }) =>
-      TimingProfile(
-        rukukExtra: rukukExtra ?? this.rukukExtra,
-        iktidalExtra: iktidalExtra ?? this.iktidalExtra,
-        sujudExtra: sujudExtra ?? this.sujudExtra,
-        dudukExtra: dudukExtra ?? this.dudukExtra,
-      );
+    int? qiyamReading,
+    int? tahiyatReading,
+  }) => TimingProfile(
+    rukukExtra: rukukExtra ?? this.rukukExtra,
+    iktidalExtra: iktidalExtra ?? this.iktidalExtra,
+    sujudExtra: sujudExtra ?? this.sujudExtra,
+    dudukExtra: dudukExtra ?? this.dudukExtra,
+    qiyamReading: qiyamReading ?? this.qiyamReading,
+    tahiyatReading: tahiyatReading ?? this.tahiyatReading,
+  );
+
+  /// Tempoh Bacaan Sendiri untuk state bacaan; null = manual (tunggu ⏩)
+  /// atau state bukan bacaan-sendiri.
+  Duration? readingDurationFor(PrayerState state) {
+    final saat = switch (state) {
+      PrayerState.qiyam || PrayerState.qunut => qiyamReading,
+      PrayerState.dudukTahiyatAwal ||
+      PrayerState.dudukTahiyatAkhir => tahiyatReading,
+      _ => 0,
+    };
+    return saat > 0 ? Duration(seconds: saat) : null;
+  }
 
   /// Extra seconds untuk state fixed-posture; 0 untuk state lain.
   int extraFor(PrayerState state) => switch (state) {
-        PrayerState.rukuk => rukukExtra,
-        PrayerState.iktidal => iktidalExtra,
-        PrayerState.sujud1 || PrayerState.sujud2 => sujudExtra,
-        PrayerState.dudukAntaraSujud => dudukExtra,
-        _ => 0,
-      };
+    PrayerState.rukuk => rukukExtra,
+    PrayerState.iktidal => iktidalExtra,
+    PrayerState.sujud1 || PrayerState.sujud2 => sujudExtra,
+    PrayerState.dudukAntaraSujud => dudukExtra,
+    _ => 0,
+  };
 
   /// Durasi tuma'ninah efektif (floor + extra) untuk state fixed-posture,
   /// atau null untuk state bukan fixed-posture (qiyam, tahiyat, dll).
