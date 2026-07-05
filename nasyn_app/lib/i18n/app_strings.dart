@@ -68,6 +68,8 @@ class AppStrings {
     'modAmaran': {AppLocale.bm: 'Mod Amaran', AppLocale.en: 'Alert Mode'},
     'senyap': {AppLocale.bm: 'Senyap', AppLocale.en: 'Silent'},
     'modVisi': {AppLocale.bm: 'Mod Visi (Kamera)', AppLocale.en: 'Vision Mode (Camera)'},
+    'visionAktif': {AppLocale.bm: 'Aktif — sahkan sujud', AppLocale.en: 'Active — confirms sujud'},
+    'visionOff': {AppLocale.bm: 'Mati — buka Tetapan', AppLocale.en: 'Off — open Settings'},
     'modVisiLabel': {
       AppLocale.bm: 'Pengesahan sujud melalui kamera',
       AppLocale.en: 'Sujud confirmation via camera',

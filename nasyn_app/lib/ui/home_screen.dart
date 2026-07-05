@@ -227,13 +227,16 @@ class _MihrabPainter extends CustomPainter {
   bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
 
-class _ModeToggleRow extends StatelessWidget {
+class _ModeToggleRow extends ConsumerWidget {
   final AppLocale locale;
   const _ModeToggleRow({required this.locale});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final s = Responsive.scale(context);
+    // Vision bukan mode berasingan (spike v3 §8.13): ia pengesahan SUJUD
+    // dalam Guided Mode. Tile ini tunjuk status Mod Visi; tap -> Tetapan.
+    final visionOn = ref.watch(visionEnabledProvider);
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
       child: Row(
@@ -262,39 +265,47 @@ class _ModeToggleRow extends StatelessWidget {
           ),
           const SizedBox(width: 12),
           Expanded(
-            child: Opacity(
-              opacity: 0.4,
-              child: Container(
-                padding: const EdgeInsets.symmetric(vertical: 16),
-                decoration: BoxDecoration(
-                  color: AppColors.accentBlue,
-                  borderRadius: BorderRadius.circular(24),
-                ),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    FittedBox(
-                      fit: BoxFit.scaleDown,
-                      child: Text(
-                        AppStrings.of('visionMode', locale),
-                        style: AppTextStyles.body.copyWith(
-                          fontSize: 36 * s,
-                          color: Colors.black,
-                          fontWeight: FontWeight.bold,
+            child: GestureDetector(
+              onTap: () => Navigator.of(context).push(
+                MaterialPageRoute(builder: (_) => const SettingsScreen()),
+              ),
+              child: Opacity(
+                opacity: visionOn ? 1.0 : 0.4,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  decoration: BoxDecoration(
+                    color: AppColors.accentBlue,
+                    borderRadius: BorderRadius.circular(24),
+                  ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      FittedBox(
+                        fit: BoxFit.scaleDown,
+                        child: Text(
+                          AppStrings.of('visionMode', locale),
+                          style: AppTextStyles.body.copyWith(
+                            fontSize: 36 * s,
+                            color: Colors.black,
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
                       ),
-                    ),
-                    FittedBox(
-                      fit: BoxFit.scaleDown,
-                      child: Text(
-                        AppStrings.of('comingSoon', locale),
-                        style: AppTextStyles.label.copyWith(
-                          fontSize: 24 * s,
-                          color: Colors.black87,
+                      FittedBox(
+                        fit: BoxFit.scaleDown,
+                        child: Text(
+                          AppStrings.of(
+                            visionOn ? 'visionAktif' : 'visionOff',
+                            locale,
+                          ),
+                          style: AppTextStyles.label.copyWith(
+                            fontSize: 24 * s,
+                            color: Colors.black87,
+                          ),
                         ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
             ),
