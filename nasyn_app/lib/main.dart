@@ -18,6 +18,7 @@ Future<void> main() async {
         appLocaleProvider.overrideWith((ref) => repo.readLocale()),
         surahRakaat1Provider.overrideWith((ref) => repo.readSurahRakaat1()),
         surahRakaat2Provider.overrideWith((ref) => repo.readSurahRakaat2()),
+        visionEnabledProvider.overrideWith((ref) => repo.readVisionEnabled()),
       ],
       child: const NasynApp(),
     ),

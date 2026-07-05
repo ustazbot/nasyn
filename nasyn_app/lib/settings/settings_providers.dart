@@ -24,3 +24,7 @@ final surahRakaat1Provider = StateProvider<String>(
 final surahRakaat2Provider = StateProvider<String>(
   (ref) => NasynAudio.alIkhlas,
 );
+
+// Vision Mode (§8.13): pengesahan SUJUD via kamera. Default OFF;
+// di-override dalam main() dengan nilai dari prefs.
+final visionEnabledProvider = StateProvider<bool>((ref) => false);

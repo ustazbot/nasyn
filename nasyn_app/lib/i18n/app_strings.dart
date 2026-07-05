@@ -67,6 +67,21 @@ class AppStrings {
     'tambahMasa': {AppLocale.bm: 'Tambah Masa', AppLocale.en: 'Add Time'},
     'modAmaran': {AppLocale.bm: 'Mod Amaran', AppLocale.en: 'Alert Mode'},
     'senyap': {AppLocale.bm: 'Senyap', AppLocale.en: 'Silent'},
+    'modVisi': {AppLocale.bm: 'Mod Visi (Kamera)', AppLocale.en: 'Vision Mode (Camera)'},
+    'modVisiLabel': {
+      AppLocale.bm: 'Pengesahan sujud melalui kamera',
+      AppLocale.en: 'Sujud confirmation via camera',
+    },
+    'modVisiNota': {
+      AppLocale.bm:
+          'Kamera depan mengesan bila kepala sampai ke sejadah — masa '
+          'tuma\'ninah sujud bermula pada waktu yang tepat. Kamera aktif '
+          'semasa sesi solat sahaja. Tiada gambar disimpan.',
+      AppLocale.en:
+          'The front camera detects when your head reaches the mat — sujud '
+          'tuma\'ninah timing starts at the right moment. Camera is active '
+          'only during prayer sessions. No images are stored.',
+    },
     'standardMode': {AppLocale.bm: 'Standard', AppLocale.en: 'Standard'},
     'pembelajaran': {AppLocale.bm: 'Pembelajaran', AppLocale.en: 'Learning'},
     'resetDefault': {

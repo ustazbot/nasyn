@@ -196,6 +196,30 @@ class SettingsScreen extends ConsumerWidget {
               }).toList(),
             ),
           ),
+          // ─── Mod Visi (§8.13): pengesahan SUJUD via kamera ───
+          _SectionHeader(AppStrings.of('modVisi', locale)),
+          Padding(
+            padding: const EdgeInsets.only(bottom: 12),
+            child: Text(
+              AppStrings.of('modVisiNota', locale),
+              style: AppTextStyles.label.copyWith(fontSize: 24),
+            ),
+          ),
+          SwitchListTile(
+            value: ref.watch(visionEnabledProvider),
+            activeThumbColor: AppColors.accentGreen,
+            contentPadding: EdgeInsets.zero,
+            title: Text(
+              AppStrings.of('modVisiLabel', locale),
+              style: AppTextStyles.body.copyWith(fontSize: 32),
+            ),
+            onChanged: (v) {
+              ref.read(visionEnabledProvider.notifier).state = v;
+              try {
+                ref.read(settingsRepositoryProvider).saveVisionEnabled(v);
+              } catch (_) {}
+            },
+          ),
           const SizedBox(height: 24),
         ],
       ),

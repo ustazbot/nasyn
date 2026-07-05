@@ -9,6 +9,7 @@ import '../prayer/prayer_config.dart';
 import '../prayer/prayer_state.dart';
 import '../prayer/prayer_state_engine.dart';
 import '../settings/timing_profile.dart';
+import '../vision/vision_sujud_service.dart';
 
 const Map<PrayerState, Duration> tumaninahDurations = {
   PrayerState.rukuk: Duration(seconds: 4),
@@ -40,6 +41,26 @@ class GuidedModeController extends ChangeNotifier {
   StreamSubscription<void>? _audioCompleteSub;
   bool _isPaused = false;
   bool _isPlayingNiat = false;
+
+  /// Vision Mode (§8.13, spike v3): pengesahan SUJUD sahaja. null = tiada
+  /// vision, behavior asal 100%. GATE FIQH: signal hanya dilayan semasa
+  /// state sujud1/sujud2 — FSM hanya sampai ke situ selepas rukun qiyam
+  /// dan rukuk dilaksana dalam urutan (dikuatkuasa PrayerStateEngine).
+  final VisionSujudService? vision;
+
+  /// Vision TIDAK BOLEH block solat: kalau sujud tak dikesan dalam tempoh
+  /// ini, timer tuma'ninah bermula juga (fallback ke behavior timing asal).
+  static const Duration visionWaitTimeout = Duration(seconds: 10);
+
+  static const _sujudStates = {PrayerState.sujud1, PrayerState.sujud2};
+
+  StreamSubscription<bool>? _visionSub;
+  Timer? _visionWaitTimer;
+  bool _sujudDetected = false;
+
+  /// Bukan-null hanya semasa menunggu detection sujud untuk mula
+  /// tuma'ninah (state sujud1/sujud2 sahaja) — inilah gate fiqh dalam kod.
+  void Function()? _pendingTumaninahArm;
 
   bool get isPaused => _isPaused;
 
@@ -80,8 +101,13 @@ class GuidedModeController extends ChangeNotifier {
     this.niatCue,
     this.surahRakaat1,
     this.surahRakaat2,
+    this.vision,
   }) : engine = PrayerStateEngine(config),
        _timing = (timing ?? TimingProfile.defaults).clamped() {
+    if (vision != null) {
+      vision!.start();
+      _visionSub = vision!.onSujudChanged.listen(_onSujudChanged);
+    }
     if (niatCue != null && !NasynAudio.isPendingRecording(niatCue!)) {
       _isPlayingNiat = true;
       audioService.play(niatCue!);
@@ -95,10 +121,22 @@ class GuidedModeController extends ChangeNotifier {
     }
   }
 
+  void _onSujudChanged(bool sujud) {
+    _sujudDetected = sujud;
+    if (sujud && _pendingTumaninahArm != null && !_isPaused) {
+      _visionWaitTimer?.cancel();
+      final arm = _pendingTumaninahArm!;
+      _pendingTumaninahArm = null;
+      arm();
+    }
+  }
+
   void _enterState() {
     _isPlayingNiat = false;
     _timer?.cancel();
     _audioCompleteSub?.cancel();
+    _visionWaitTimer?.cancel();
+    _pendingTumaninahArm = null;
 
     if (engine.currentState == PrayerState.selesai) {
       return;
@@ -179,7 +217,7 @@ class GuidedModeController extends ChangeNotifier {
     if (cues.isNotEmpty) {
       var tumaninahElapsed = false;
       var audioCompleted = false;
-      _timer = Timer(duration, () {
+      _armTumaninah(duration, () {
         tumaninahElapsed = true;
         if (audioCompleted) _autoAdvance();
       });
@@ -188,8 +226,30 @@ class GuidedModeController extends ChangeNotifier {
         if (tumaninahElapsed) _autoAdvance();
       });
     } else {
-      _timer = Timer(duration, _autoAdvance);
+      _armTumaninah(duration, _autoAdvance);
     }
+  }
+
+  /// Vision-confirm SUJUD (§8.13): pada sujud1/sujud2 dengan vision aktif,
+  /// timer tuma'ninah bermula bila sujud DIKESAN (kepala sampai ke lantai),
+  /// bukan bila state bertukar — pengguna lambat turun tak "tertinggal".
+  /// Fallback [visionWaitTimeout] jamin vision tak pernah block solat.
+  /// State lain / tiada vision: timer terus bermula (behavior asal).
+  void _armTumaninah(Duration duration, void Function() onDone) {
+    final visionGated =
+        vision != null && _sujudStates.contains(engine.currentState);
+    if (!visionGated || _sujudDetected) {
+      _timer = Timer(duration, onDone);
+      return;
+    }
+    _pendingTumaninahArm = () {
+      _timer = Timer(duration, onDone);
+    };
+    _visionWaitTimer = Timer(visionWaitTimeout, () {
+      final arm = _pendingTumaninahArm;
+      _pendingTumaninahArm = null;
+      arm?.call();
+    });
   }
 
   void _autoAdvance() {
@@ -203,6 +263,8 @@ class GuidedModeController extends ChangeNotifier {
     _isPaused = true;
     _timer?.cancel();
     _audioCompleteSub?.cancel();
+    _visionWaitTimer?.cancel();
+    _pendingTumaninahArm = null;
     audioService.stop();
     notifyListeners();
   }
@@ -231,6 +293,9 @@ class GuidedModeController extends ChangeNotifier {
   void dispose() {
     _timer?.cancel();
     _audioCompleteSub?.cancel();
+    _visionWaitTimer?.cancel();
+    _visionSub?.cancel();
+    vision?.stop();
     audioService.dispose();
     super.dispose();
   }

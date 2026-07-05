@@ -40,6 +40,15 @@ kotlin {
     }
 }
 
+dependencies {
+    // Vision Mode (§8.13): CameraX headless + MediaPipe Face Detector —
+    // versi sama yang divalidasi dalam spike (app/ root repo)
+    implementation("androidx.camera:camera-core:1.3.4")
+    implementation("androidx.camera:camera-camera2:1.3.4")
+    implementation("androidx.camera:camera-lifecycle:1.3.4")
+    implementation("com.google.mediapipe:tasks-vision:0.10.14")
+}
+
 flutter {
     source = "../.."
 }

@@ -1,4 +1,8 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Vision Mode (§8.13): kamera depan untuk pengesahan SUJUD sahaja.
+         Kamera aktif HANYA semasa sesi solat; auto-grant via Device Owner. -->
+    <uses-permission android:name="android.permission.CAMERA" />
+    <uses-feature android:name="android.hardware.camera" android:required="false" />
     <application
         android:label="NASYN"
         android:name="${applicationName}"

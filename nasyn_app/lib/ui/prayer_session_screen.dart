@@ -17,6 +17,7 @@ import '../settings/settings_providers.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_text_styles.dart';
 import '../theme/responsive.dart';
+import '../vision/vision_sujud_service.dart';
 import 'session_summary_screen.dart';
 
 final guidedModeControllerProvider = ChangeNotifierProvider.autoDispose
@@ -33,6 +34,11 @@ final guidedModeControllerProvider = ChangeNotifierProvider.autoDispose
         niatCue: NasynAudio.niatBySolat[args.type],
         surahRakaat1: ref.read(surahRakaat1Provider),
         surahRakaat2: ref.read(surahRakaat2Provider),
+        // Vision Mode (§8.13): pengesahan SUJUD sahaja, opt-in dari
+        // Settings. null = behavior asal 100%.
+        vision: ref.read(visionEnabledProvider)
+            ? ChannelVisionSujudService()
+            : null,
       );
       // JANGAN ref.onDispose(controller.dispose) — ChangeNotifierProvider
       // auto-dispose notifier; manual dispose = double-dispose assert.

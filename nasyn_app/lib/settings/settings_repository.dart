@@ -92,6 +92,15 @@ class SettingsRepository {
   Future<void> saveAssistanceLevel(AssistanceLevel level) =>
       _prefs.setString(_kAssistanceLevel, level.name);
 
+  // Vision Mode (§8.13): pengesahan SUJUD via kamera. Default OFF —
+  // pilot mesti opt-in secara sedar (privasi kamera).
+  static const _kVisionEnabled = 'visionEnabled';
+
+  bool readVisionEnabled() => _prefs.getBool(_kVisionEnabled) ?? false;
+
+  Future<void> saveVisionEnabled(bool enabled) =>
+      _prefs.setBool(_kVisionEnabled, enabled);
+
   AppLocale readLocale() {
     final name = _prefs.getString(_kLocale);
     return AppLocale.values.where((l) => l.name == name).firstOrNull ??
