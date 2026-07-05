@@ -75,6 +75,14 @@ class MainActivity : AppCompatActivity(), FaceDetectorHelper.Listener {
             }
         })
 
+        // Kalibrasi persist merentas restart — tanpa ini setiap reinstall
+        // memaksa kalibrasi semula dan pose jauh semua UNKNOWN
+        val prefs = getSharedPreferences("spike", MODE_PRIVATE)
+        prefs.getString("calibration", null)?.let { calibration.restore(it) }
+        calibration.onChanged = {
+            prefs.edit().putString("calibration", calibration.serialize()).apply()
+        }
+
         val tallyLogger = TallyLogger(this)
         frameLogger = FrameLogger(this)
         val controlPanel = ControlPanel(this, calibration, tallyLogger)

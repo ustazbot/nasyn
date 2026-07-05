@@ -39,8 +39,27 @@ private fun featureDistance(a: BboxFeature, b: BboxFeature): Float =
 class CalibrationProfile {
     private val baselines = mutableMapOf<PoseClass, BboxFeature>()
 
+    // Dipanggil selepas setiap recordBaseline — MainActivity guna untuk
+    // persist ke SharedPreferences (kalibrasi hilang setiap restart tanpa ini)
+    var onChanged: (() -> Unit)? = null
+
     fun recordBaseline(poseClass: PoseClass, signal: BboxSignal) {
         baselines[poseClass] = bboxFeature(signal)
+        onChanged?.invoke()
+    }
+
+    // Format ringkas "QIYAM:0.2,-4.5;RUKUK:..." untuk simpan/pulih
+    fun serialize(): String = baselines.entries.joinToString(";") {
+        "${it.key}:${it.value.centerY},${it.value.logRatio}"
+    }
+
+    fun restore(serialized: String) {
+        serialized.split(";").forEach { entry ->
+            val (name, vals) = entry.split(":").takeIf { it.size == 2 } ?: return@forEach
+            val (cy, lr) = vals.split(",").takeIf { it.size == 2 } ?: return@forEach
+            val poseClass = PoseClass.entries.find { it.name == name } ?: return@forEach
+            baselines[poseClass] = BboxFeature(cy.toFloatOrNull() ?: return@forEach, lr.toFloatOrNull() ?: return@forEach)
+        }
     }
 
     // SUJUD tak perlu baseline — ia dikesan via threshold proximity, bukan
@@ -99,15 +118,20 @@ class BboxClassifier(
             return PoseClassification(PoseClass.SUJUD, (60 + 40 * over).toInt().coerceIn(60, 100))
         }
 
-        // Detection kembali pada ratio bukan-dekat = kepala dah angkat,
-        // keluar dari hold sujud
-        inSujudHold = false
-
         if (signal.ratio > FAR_RATIO) {
-            // Zon transisi 0.10-0.15 (jarang: 37/1787 frame desktop) —
-            // sedang turun/bangun, jangan teka
-            return PoseClassification(PoseClass.UNKNOWN, 0)
+            // Zon transisi FAR..ENTER: data device 5 Julai — semasa tahan
+            // sujud, detection separa muncul pada 0.10-0.14 (28-32 frame per
+            // episod). Ia TIDAK keluar hold; kalau dalam hold, ini masih
+            // sujud. Di luar hold: sedang turun/bangun, jangan teka.
+            return if (inSujudHold && now - holdStartMs < SUJUD_MAX_HOLD_MS) {
+                PoseClassification(PoseClass.SUJUD, 60)
+            } else {
+                PoseClassification(PoseClass.UNKNOWN, 0)
+            }
         }
+
+        // Muka jelas jauh (ratio <= FAR) = kepala dah angkat, keluar hold
+        inSujudHold = false
 
         if (!calibration.isComplete()) {
             return PoseClassification(PoseClass.UNKNOWN, 0)

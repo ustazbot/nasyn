@@ -88,6 +88,36 @@ class BboxClassifierTest {
     }
 
     @Test
+    fun `detection separa zon kelabu semasa hold = masih SUJUD (bukan keluar)`() {
+        var now = 0L
+        val classifier = BboxClassifier(CalibrationProfile()) { now }
+        classifier.classify(signal(size = 0.45f)) // masuk SUJUD
+        now = 5_000L
+        // Kepala hampir menutup lens — detection separa ratio ~0.12
+        assertEquals(PoseClass.SUJUD, classifier.classify(signal(size = 0.35f)).poseClass)
+        now = 10_000L
+        // Detection hilang semula — hold masih hidup
+        assertEquals(PoseClass.SUJUD, classifier.classify(null).poseClass)
+    }
+
+    @Test
+    fun `serialize dan restore kalibrasi mengekalkan klasifikasi`() {
+        val original = calibrated()
+        val restored = CalibrationProfile()
+        restored.restore(original.serialize())
+        val classifier = BboxClassifier(restored)
+        assertEquals(PoseClass.QIYAM, classifier.classify(signal(0.20f, centerY = 0.2f)).poseClass)
+        assertEquals(PoseClass.RUKUK, classifier.classify(signal(0.28f, centerY = 0.5f)).poseClass)
+    }
+
+    @Test
+    fun `restore string rosak tidak crash`() {
+        val c = CalibrationProfile()
+        c.restore("sampah;;QIYAM:abc,def;RUKUK:1.0")
+        assertEquals(false, c.isComplete())
+    }
+
+    @Test
     fun `zon transisi antara FAR dan SUJUD_ENTER = UNKNOWN`() {
         val classifier = BboxClassifier(calibrated())
         val result = classifier.classify(signal(size = 0.35f)) // ratio 0.1225
