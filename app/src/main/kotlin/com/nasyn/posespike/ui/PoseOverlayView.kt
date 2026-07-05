@@ -5,14 +5,15 @@ import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.Paint
 import android.view.View
+import com.nasyn.posespike.pose.BboxSignal
 import com.nasyn.posespike.pose.PoseClassification
-import com.nasyn.posespike.pose.PoseLandmarks
 
 class PoseOverlayView(context: Context) : View(context) {
 
-    private val dotPaint = Paint().apply {
+    private val boxPaint = Paint().apply {
         color = Color.GREEN
-        style = Paint.Style.FILL
+        style = Paint.Style.STROKE
+        strokeWidth = 6f
     }
     private val textPaint = Paint().apply {
         color = Color.WHITE
@@ -25,18 +26,18 @@ class PoseOverlayView(context: Context) : View(context) {
     }
 
     private var classification: PoseClassification? = null
-    private var landmarks: PoseLandmarks? = null
+    private var signal: BboxSignal? = null
     private var inferenceTimeMs: Long = 0
     private var debugInfo: String = ""
 
     fun update(
         classification: PoseClassification,
-        landmarks: PoseLandmarks?,
+        signal: BboxSignal?,
         inferenceTimeMs: Long,
         debugInfo: String = "",
     ) {
         this.classification = classification
-        this.landmarks = landmarks
+        this.signal = signal
         this.inferenceTimeMs = inferenceTimeMs
         this.debugInfo = debugInfo
         postInvalidate()
@@ -45,11 +46,10 @@ class PoseOverlayView(context: Context) : View(context) {
     override fun onDraw(canvas: Canvas) {
         super.onDraw(canvas)
 
-        landmarks?.let { lm ->
-            val points = listOf(lm.nose, lm.leftEar, lm.rightEar, lm.leftShoulder, lm.rightShoulder)
-            for (point in points) {
-                canvas.drawCircle(point.x * width, point.y * height, 12f, dotPaint)
-            }
+        signal?.let { s ->
+            canvas.drawRect(
+                s.left * width, s.top * height, s.right * width, s.bottom * height, boxPaint,
+            )
         }
 
         val result = classification ?: return

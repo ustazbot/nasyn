@@ -4,10 +4,10 @@ import android.content.Context
 import android.widget.Button
 import android.widget.LinearLayout
 import android.widget.TextView
+import com.nasyn.posespike.pose.BboxSignal
 import com.nasyn.posespike.pose.CalibrationProfile
 import com.nasyn.posespike.pose.PoseClass
 import com.nasyn.posespike.pose.PoseClassification
-import com.nasyn.posespike.pose.PoseLandmarks
 import com.nasyn.posespike.tally.TallyLogger
 
 class ControlPanel(
@@ -16,7 +16,7 @@ class ControlPanel(
     private val tallyLogger: TallyLogger,
 ) : LinearLayout(context) {
 
-    private var landmarksProvider: () -> PoseLandmarks? = { null }
+    private var signalProvider: () -> BboxSignal? = { null }
     private var classificationProvider: () -> PoseClassification = { PoseClassification(PoseClass.UNKNOWN, 0) }
     private var inferenceTimeMsProvider: () -> Long = { 0L }
     private val summaryView: TextView
@@ -24,17 +24,18 @@ class ControlPanel(
     init {
         orientation = VERTICAL
 
+        // SUJUD tiada butang kalibrasi — dikesan via threshold proximity,
+        // bukan baseline (bbox intermittent semasa sujud)
         val calibrationRow = LinearLayout(context).apply { orientation = HORIZONTAL }
         listOf(
             "Berdiri" to PoseClass.QIYAM,
             "Rukuk" to PoseClass.RUKUK,
-            "Sujud" to PoseClass.SUJUD,
             "Duduk" to PoseClass.DUDUK,
         ).forEach { (label, poseClass) ->
             calibrationRow.addView(Button(context).apply {
                 text = label
                 setOnClickListener {
-                    landmarksProvider()?.let { calibration.recordBaseline(poseClass, it) }
+                    signalProvider()?.let { calibration.recordBaseline(poseClass, it) }
                 }
             })
         }
@@ -47,7 +48,7 @@ class ControlPanel(
                 val result = classificationProvider()
                 tallyLogger.log(
                     result.poseClass, result.confidence, inferenceTimeMsProvider(),
-                    correct = true, landmarks = landmarksProvider(),
+                    correct = true, signal = signalProvider(),
                 )
                 refreshSummary()
             }
@@ -58,7 +59,7 @@ class ControlPanel(
                 val result = classificationProvider()
                 tallyLogger.log(
                     result.poseClass, result.confidence, inferenceTimeMsProvider(),
-                    correct = false, landmarks = landmarksProvider(),
+                    correct = false, signal = signalProvider(),
                 )
                 refreshSummary()
             }
@@ -69,8 +70,8 @@ class ControlPanel(
         addView(summaryView)
     }
 
-    fun currentLandmarksProvider(provider: () -> PoseLandmarks?) {
-        landmarksProvider = provider
+    fun currentSignalProvider(provider: () -> BboxSignal?) {
+        signalProvider = provider
     }
 
     fun currentClassificationProvider(provider: () -> PoseClassification) {

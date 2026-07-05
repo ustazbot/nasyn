@@ -16,61 +16,38 @@ import androidx.camera.core.Preview
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.view.PreviewView
 import androidx.core.content.ContextCompat
+import com.nasyn.posespike.pose.BboxClassifier
+import com.nasyn.posespike.pose.BboxSignal
 import com.nasyn.posespike.pose.CalibrationProfile
-import com.nasyn.posespike.pose.LandmarkMapper
+import com.nasyn.posespike.pose.FaceDetectorHelper
 import com.nasyn.posespike.pose.PoseClass
 import com.nasyn.posespike.pose.PoseClassification
-import com.nasyn.posespike.pose.PoseClassifier
-import com.nasyn.posespike.pose.PoseLandmarkerHelper
-import com.nasyn.posespike.pose.PoseLandmarks
+import com.nasyn.posespike.tally.FrameLogger
 import com.nasyn.posespike.tally.TallyLogger
 import com.nasyn.posespike.ui.ControlPanel
 import com.nasyn.posespike.ui.PoseOverlayView
 
 interface ResultObserver {
-    fun onClassification(classification: PoseClassification, landmarks: PoseLandmarks?, inferenceTimeMs: Long)
+    fun onClassification(classification: PoseClassification, signal: BboxSignal?, inferenceTimeMs: Long)
 }
 
-class MainActivity : AppCompatActivity(), PoseLandmarkerHelper.Listener {
+// Spike v3 (§8.13): bounding-box proximity — pendekatan divalidasi pada
+// spike desktop 2026-07-05 (SPIKE-RESULT.md "Spike Ulangan (Desktop)").
+// Landmark & luma fallback v2 digantikan sepenuhnya dengan bbox BlazeFace.
+class MainActivity : AppCompatActivity(), FaceDetectorHelper.Listener {
 
     val calibration = CalibrationProfile()
-    val classifier = PoseClassifier(calibration)
+    val classifier = BboxClassifier(calibration)
 
     private var observer: ResultObserver? = null
-    private var poseLandmarkerHelper: PoseLandmarkerHelper? = null
+    private var faceDetectorHelper: FaceDetectorHelper? = null
+    private var frameLogger: FrameLogger? = null
     private lateinit var previewView: PreviewView
     private lateinit var rootLayout: FrameLayout
 
-    private var latestLandmarks: PoseLandmarks? = null
+    private var latestSignal: BboxSignal? = null
     private var latestClassification: PoseClassification = PoseClassification(PoseClass.UNKNOWN, 0)
     private var latestInferenceTimeMs: Long = 0
-
-    // §8.13 proximity signal untuk SUJUD: kepala rapat lens menutup cahaya
-    // → luma frame jatuh mendadak + landmark hilang serentak = SUJUD.
-    // Baseline = EMA luma semasa landmark visible (frame tak terlindung).
-    @Volatile private var latestLuma = 0f
-    @Volatile private var lumaBaseline = 0f
-
-    private fun meanLuma(bitmap: Bitmap): Float {
-        val stepX = (bitmap.width / 16).coerceAtLeast(1)
-        val stepY = (bitmap.height / 16).coerceAtLeast(1)
-        var sum = 0L
-        var count = 0
-        var y = 0
-        while (y < bitmap.height) {
-            var x = 0
-            while (x < bitmap.width) {
-                val p = bitmap.getPixel(x, y)
-                sum += (android.graphics.Color.red(p) +
-                    android.graphics.Color.green(p) +
-                    android.graphics.Color.blue(p)) / 3
-                count++
-                x += stepX
-            }
-            y += stepY
-        }
-        return sum.toFloat() / count
-    }
 
     private val requestCameraPermission = registerForActivityResult(
         ActivityResultContracts.RequestPermission()
@@ -87,22 +64,21 @@ class MainActivity : AppCompatActivity(), PoseLandmarkerHelper.Listener {
         val overlay = PoseOverlayView(this)
         rootLayout.addView(overlay, ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT))
         setResultObserver(object : ResultObserver {
-            override fun onClassification(classification: PoseClassification, landmarks: PoseLandmarks?, inferenceTimeMs: Long) {
-                latestLandmarks = landmarks
+            override fun onClassification(classification: PoseClassification, signal: BboxSignal?, inferenceTimeMs: Long) {
+                latestSignal = signal
                 latestClassification = classification
                 latestInferenceTimeMs = inferenceTimeMs
-                val feature = landmarks?.let { com.nasyn.posespike.pose.poseFeature(it) }
-                val debugInfo = buildString {
-                    append("luma %.0f / base %.0f".format(latestLuma, lumaBaseline))
-                    feature?.let { append("  y%.2f sz%.2f".format(it.headY, it.logHeadSize)) }
-                }
-                overlay.update(classification, landmarks, inferenceTimeMs, debugInfo)
+                val debugInfo = signal?.let {
+                    "ratio %.3f  conf %.2f  cy %.2f".format(it.ratio, it.conf, it.centerY)
+                } ?: "no detection"
+                overlay.update(classification, signal, inferenceTimeMs, debugInfo)
             }
         })
 
         val tallyLogger = TallyLogger(this)
+        frameLogger = FrameLogger(this)
         val controlPanel = ControlPanel(this, calibration, tallyLogger)
-        controlPanel.currentLandmarksProvider { latestLandmarks }
+        controlPanel.currentSignalProvider { latestSignal }
         controlPanel.currentClassificationProvider { latestClassification }
         controlPanel.currentInferenceTimeMsProvider { latestInferenceTimeMs }
         rootLayout.addView(
@@ -110,7 +86,7 @@ class MainActivity : AppCompatActivity(), PoseLandmarkerHelper.Listener {
             FrameLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.BOTTOM),
         )
 
-        poseLandmarkerHelper = PoseLandmarkerHelper(this, this)
+        faceDetectorHelper = FaceDetectorHelper(this, this)
 
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA)
             == PackageManager.PERMISSION_GRANTED
@@ -149,9 +125,7 @@ class MainActivity : AppCompatActivity(), PoseLandmarkerHelper.Listener {
                 val frameTimeMs = imageProxy.imageInfo.timestamp / 1_000_000
                 imageProxy.close()
 
-                latestLuma = meanLuma(bitmap)
-
-                poseLandmarkerHelper?.detectAsync(
+                faceDetectorHelper?.detectAsync(
                     bitmap = bitmap,
                     rotationDegrees = rotationDegrees,
                     isFrontCamera = true,
@@ -159,9 +133,8 @@ class MainActivity : AppCompatActivity(), PoseLandmarkerHelper.Listener {
                 )
             }
 
-            // Spike v2 (§8.13): kamera depan gaya "video-call" — phone
-            // diletak RENDAH dekat sejadah, skrin+lens menghala atas ke
-            // arah pengguna (bukan paras dada macam spike v1)
+            // §8.13: kamera depan gaya "video-call" — phone diletak RENDAH
+            // dekat sejadah, skrin+lens menghala atas ke arah pengguna
             val cameraSelector = CameraSelector.DEFAULT_FRONT_CAMERA
 
             cameraProvider.unbindAll()
@@ -169,24 +142,10 @@ class MainActivity : AppCompatActivity(), PoseLandmarkerHelper.Listener {
         }, ContextCompat.getMainExecutor(this))
     }
 
-    override fun onResult(result: com.google.mediapipe.tasks.vision.poselandmarker.PoseLandmarkerResult, inferenceTimeMs: Long) {
-        val landmarks = LandmarkMapper.toPoseLandmarks(result)
-        val luma = latestLuma
-        val classification = if (landmarks != null) {
-            // Frame tak terlindung — kemaskini baseline cahaya
-            lumaBaseline =
-                if (lumaBaseline == 0f) luma else 0.9f * lumaBaseline + 0.1f * luma
-            classifier.classify(landmarks)
-        } else if (lumaBaseline > 0f && luma < lumaBaseline * 0.45f) {
-            // §8.13: tiada landmark + frame gelap mendadak (<45% baseline)
-            // = kepala menutup lens = SUJUD proximity.
-            // ponytail: threshold 0.45 tekaan awal — tala ikut data spike
-            val darkness = 1f - (luma / (lumaBaseline * 0.45f))
-            PoseClassification(PoseClass.SUJUD, (60 + 40 * darkness).toInt().coerceIn(60, 100))
-        } else {
-            PoseClassification(PoseClass.UNKNOWN, 0)
-        }
-        observer?.onClassification(classification, landmarks, inferenceTimeMs)
+    override fun onResult(signal: BboxSignal?, inferenceTimeMs: Long) {
+        val classification = classifier.classify(signal)
+        frameLogger?.log(signal, classification, inferenceTimeMs)
+        observer?.onClassification(classification, signal, inferenceTimeMs)
     }
 
     override fun onError(message: String) {
@@ -195,6 +154,7 @@ class MainActivity : AppCompatActivity(), PoseLandmarkerHelper.Listener {
 
     override fun onDestroy() {
         super.onDestroy()
-        poseLandmarkerHelper?.close()
+        faceDetectorHelper?.close()
+        frameLogger?.close()
     }
 }
