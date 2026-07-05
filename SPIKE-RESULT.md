@@ -114,3 +114,51 @@ Semasa ujian langsung (bukan dari CSV — overlay diperhatikan secara real-time 
 1. Replikasi pada **Redmi 9A kamera depan sebenar** pada mounting sama (optik/FOV berbeza dari webcam) — port signal bbox ke spike Kotlin (`com.nasyn.posespike`) guna MediaPipe Face Detector, bukan Pose Landmarker.
 2. Pembezaan QIYAM vs RUKUK vs DUDUK masih perlu signal tambahan (posisi-y bbox dalam frame / trend saiz) — data desktop tunjuk ratio sahaja tak membezakan tiga pose jauh ini.
 3. Ujian telekung/jubah + pencahayaan rendah masih outstanding (dari spike asal).
+
+---
+
+# Spike v3 (Device): Verdict Akhir — Redmi 9A Kamera Depan
+
+**Tarikh:** 2026-07-05
+**Setup:** Port Kotlin (commit `013ea1e` + tala `b3d53a8`, `0f3bdaf`) — MediaPipe
+Face Detector (BlazeFace short-range) pada kamera depan Redmi 9A, mounting
+rendah §8.13. 4 sesi, ~10,600 frame dalam `pose_spike_v3_frames.csv`
+(device), termasuk 1 sesi berlabel ground-truth oleh Bos.
+
+## Hasil
+
+**SUJUD via proximity: BERFUNGSI ✅**
+- Lonjakan masuk-sujud capai ratio 0.60-0.89 pada device (desktop: 0.28) —
+  threshold 0.15 dilepasi dengan margin besar.
+- Semasa tahan sujud kepala MENUTUP lens sepenuhnya (detection 0% sampai
+  26s — lebih ekstrem dari desktop). Selepas tala: hold kekal sepanjang
+  fasa tahan, keluar bila muka jelas jauh semula, siling keselamatan 45s.
+- Latency purata 65ms, p95 81ms — bawah target PRD 100ms. ✅
+
+**QIYAM/RUKUK/DUDUK via face bbox sahaja: TIDAK BOLEH DIHARAP ❌**
+- Punca fizikal, bukan isu tala: muka hanya menghala ke lensa semasa
+  RUKUK (muka tunduk ke arah phone di sejadah → detection 100%). Semasa
+  QIYAM/DUDUK sebenar, muka menghala ke hadapan — detection jatuh 15-30%.
+- Sesi ground-truth: rukuk dilabel QIYAM (baseline kalibrasi tercemar —
+  menekan butang kalibrasi memaksa pengguna menunduk pandang phone,
+  merakam geometri rukuk sebagai "qiyam"), qiyam & duduk = UNKNOWN.
+
+**False positive SUJUD dikenal pasti:** muka dekat lensa semasa memegang/
+menyemak phone mencetus SUJUD (447 frame dalam satu sesi tanpa sujud
+sebenar). Mitigasi bukan pada detector — pada FSM.
+
+## Verdict: PARTIAL-GO
+
+Proximity SUJUD sahaja yang GO. Implikasi seni bina Vision Mode:
+
+1. **Guided Mode kekal pemandu utama** (timing/audio, seperti sedia ada).
+2. **Vision menyumbang SATU signal: pengesahan SUJUD** — confirm/advance
+   rukun sujud via proximity, bukan classifier 4-pose penuh.
+3. **FSM mesti gate signal SUJUD**: hanya sah dalam konteks urutan solat
+   (selepas rukuk/iktidal, sesi aktif, phone pegun) — menutup false
+   positive "pegang phone".
+4. Kalibrasi per-pose DIBUANG dari design (baseline tercemar secara
+   struktur — pengguna kena pandang phone untuk menekan butang).
+
+Outstanding: telekung/jubah + low-light untuk signal SUJUD; keputusan
+produk (Bos) sama ada Vision-confirm-SUJUD cukup bernilai untuk Fasa 3.
