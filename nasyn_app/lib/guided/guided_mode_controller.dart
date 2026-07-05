@@ -14,8 +14,10 @@ import '../vision/vision_sujud_service.dart';
 const Map<PrayerState, Duration> tumaninahDurations = {
   PrayerState.rukuk: Duration(seconds: 4),
   PrayerState.iktidal: Duration(seconds: 3),
-  PrayerState.sujud1: Duration(seconds: 4),
-  PrayerState.sujud2: Duration(seconds: 4),
+  // Sujud 4s->2s (maklum balas Bos 5 Julai: kadenz sujud terlalu lambat);
+  // extra dari Settings masih boleh menambah atas floor ini
+  PrayerState.sujud1: Duration(seconds: 2),
+  PrayerState.sujud2: Duration(seconds: 2),
   PrayerState.dudukAntaraSujud: Duration(seconds: 3),
 };
 

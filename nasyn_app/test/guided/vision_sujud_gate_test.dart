@@ -63,9 +63,9 @@ void main() {
       async.elapse(const Duration(seconds: 6));
       expect(c.currentState, PrayerState.sujud1);
 
-      // Sujud dikesan -> timer 4s bermula sekarang
+      // Sujud dikesan -> timer 2s bermula sekarang
       vision.emitSujud(true);
-      async.elapse(const Duration(seconds: 3, milliseconds: 900));
+      async.elapse(const Duration(seconds: 1, milliseconds: 900));
       expect(c.currentState, PrayerState.sujud1);
       async.elapse(const Duration(milliseconds: 200));
       expect(c.currentState, PrayerState.dudukAntaraSujud);
