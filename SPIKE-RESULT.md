@@ -83,3 +83,34 @@ Semasa ujian langsung (bukan dari CSV — overlay diperhatikan secara real-time 
 - Vision Mode integration (Fasa 3 dalam roadmap PRD §12) masih bergantung pada SUJUD diselesaikan (reposisi kamera / sudut) sebelum boleh declare GO penuh — ini **belum** selesai, cuma pembangunan lain (FSM, Guided Mode) tak perlu tunggu.
 - Fasa 1 (FSM + Guided Mode, timing-based, tiada kamera) adalah pilihan selamat untuk teruskan sekarang sebab ia **tidak bergantung** pada Vision Mode/pose classification langsung — sebab inilah PRD sendiri strukturkan Fasa 1 sebelum Fasa 3 (Vision Integration).
 - Protokol ujian penuh (≥15-20 rep/kelas) + eksperimen kedudukan kamera SUJUD masih outstanding — patut disambung selari atau sebelum Fasa 3 bermula, bukan dibuang terus.
+
+---
+
+# Spike Ulangan (Desktop): Proximity/Blob-Size Signal — §8.13
+
+**Tarikh:** 2026-07-05
+**Setup:** USB webcam 640x480 pada GMKtec (Linux Mint), MediaPipe 0.10.35 Python. Kamera di lantai, hujung sejadah, lensa hadap atas — mounting candidate PRD §8.13. Kod: `spike-desktop/` (`spike_proximity_signal.py`, `burst.py`), data mentah: `pose2.csv`, `sujudhold.csv` (~3,000 frames berlabel masa).
+**Pendekatan dibanding:** (1) BlazeFace short-range **bounding-box area ratio**, (2) Face Landmarker 478 titik.
+
+## Hasil
+
+| Keadaan | bbox area ratio | bbox detect rate | landmark rate |
+|---|---|---|---|
+| QIYAM/DUDUK (jauh) | 0.03–0.08 | 90–98% | 60–100% |
+| Turun ke sujud (dekat) | 0.19–0.28 | 43–60% | 0% |
+| Tahan sujud (20s) | ~0.24–0.28 (saturate) | 13–75% intermittent | **0%** |
+
+- **Pemisahan 4–8x** antara jauh (≤0.08) dan dekat (≥0.15) — threshold `ratio > 0.15` bersih, hampir tiada overlap.
+- **Landmark collapse pada jarak dekat disahkan:** 63–70% → 2.8% bila ratio >0.15; 0% sepanjang tahan sujud. Hipotesis betul — jangan guna Face Landmarker untuk SUJUD.
+- **Bbox superset penuh:** 0 frame di mana landmark detect tapi bbox miss. Bbox degrade graceful — lock pada kepala walaupun hanya rambut/atas kepala kelihatan (disahkan visual pada keyframes).
+- **Signature SUJUD dua peringkat:** (a) ratio melonjak >0.15 semasa turun, (b) semasa tahan, bbox jadi intermittent (kepala terlalu dekat) — jadi logik state: `masuk SUJUD bila ratio>threshold; kekal SUJUD selagi (ratio tinggi ATAU detection hilang) selepas lonjakan`. Selari dengan konsep fallback proximity-luma spike v2 phone.
+- False positive (bbox pada baju semasa qiyam jauh) wujud pada conf <0.5; detection sebenar conf 0.58+. Tapis dengan `min_detection_confidence ≈ 0.5`.
+
+## Verdict
+
+**GO untuk pendekatan bounding-box proximity (§8.13) — pada peringkat signal.** SUJUD yang dulu 0% kini ada signal yang jelas, monotonic, dan boleh dithresholdkan.
+
+**Syarat sebelum GO penuh Vision Mode:**
+1. Replikasi pada **Redmi 9A kamera depan sebenar** pada mounting sama (optik/FOV berbeza dari webcam) — port signal bbox ke spike Kotlin (`com.nasyn.posespike`) guna MediaPipe Face Detector, bukan Pose Landmarker.
+2. Pembezaan QIYAM vs RUKUK vs DUDUK masih perlu signal tambahan (posisi-y bbox dalam frame / trend saiz) — data desktop tunjuk ratio sahaja tak membezakan tiga pose jauh ini.
+3. Ujian telekung/jubah + pencahayaan rendah masih outstanding (dari spike asal).

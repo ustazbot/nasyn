@@ -1,0 +1,7 @@
+.venv/
+__pycache__/
+spike_log_*.csv
+*.jpg
+*.tflite
+*.task
+*.mp4
