@@ -39,20 +39,21 @@ class BboxClassifierTest {
     }
 
     @Test
-    fun `detection hilang selepas proximity tinggi = kekal SUJUD (fasa tahan)`() {
+    fun `detection hilang selepas masuk SUJUD = kekal SUJUD sepanjang tahan`() {
         var now = 0L
         val classifier = BboxClassifier(CalibrationProfile()) { now }
         classifier.classify(signal(size = 0.45f)) // masuk SUJUD
-        now = 2000L
+        // Data device: kepala tutup lens sampai 26s — mesti kekal SUJUD
+        now = 26_000L
         assertEquals(PoseClass.SUJUD, classifier.classify(null).poseClass)
     }
 
     @Test
-    fun `detection hilang melebihi timeout = UNKNOWN`() {
+    fun `hold melebihi siling keselamatan = UNKNOWN`() {
         var now = 0L
         val classifier = BboxClassifier(CalibrationProfile()) { now }
         classifier.classify(signal(size = 0.45f))
-        now = BboxClassifier.HOLD_TIMEOUT_MS + 1
+        now = BboxClassifier.SUJUD_MAX_HOLD_MS + 1
         assertEquals(PoseClass.UNKNOWN, classifier.classify(null).poseClass)
     }
 
@@ -63,13 +64,26 @@ class BboxClassifierTest {
     }
 
     @Test
-    fun `hold tidak refresh sendiri - latch tak kekal selamanya`() {
+    fun `detection kembali pada ratio jauh = keluar hold`() {
+        var now = 0L
+        val classifier = BboxClassifier(calibrated()) { now }
+        classifier.classify(signal(size = 0.45f)) // masuk SUJUD
+        now = 10_000L
+        // Kepala angkat — muka nampak semula pada saiz qiyam
+        assertEquals(PoseClass.QIYAM, classifier.classify(signal(0.20f, centerY = 0.2f)).poseClass)
+        // Hold dah tamat: detection hilang selepas ini BUKAN sujud
+        now = 11_000L
+        assertEquals(PoseClass.UNKNOWN, classifier.classify(null).poseClass)
+    }
+
+    @Test
+    fun `siling hold dikira dari MASUK sujud - detection dekat berulang tak reset`() {
         var now = 0L
         val classifier = BboxClassifier(CalibrationProfile()) { now }
-        classifier.classify(signal(size = 0.45f))
-        now = 2000L
-        classifier.classify(null) // masih SUJUD, tapi TIDAK refresh timer
-        now = BboxClassifier.HOLD_TIMEOUT_MS + 1
+        classifier.classify(signal(size = 0.45f)) // masuk SUJUD pada t=0
+        now = 40_000L
+        classifier.classify(signal(size = 0.45f)) // masih dekat — TIDAK reset siling
+        now = BboxClassifier.SUJUD_MAX_HOLD_MS + 1
         assertEquals(PoseClass.UNKNOWN, classifier.classify(null).poseClass)
     }
 

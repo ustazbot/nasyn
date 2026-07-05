@@ -56,38 +56,52 @@ class BboxClassifier(
     private val nowMs: () -> Long = { System.currentTimeMillis() },
 ) {
     companion object {
-        // Dari data desktop: sujud >=0.19, jauh <=0.12 (max qiyam 0.120)
+        // Dari data desktop: sujud >=0.19, jauh <=0.12 (max qiyam 0.120).
+        // Device Redmi 9A: lonjakan turun-sujud capai 0.66-0.79 — threshold
+        // 0.15 masih dilepasi dengan margin besar.
         const val SUJUD_ENTER_RATIO = 0.15f
         const val FAR_RATIO = 0.10f
-        // Semasa tahan sujud bbox rate 13-75% per tetingkap 2s — gap
-        // detection biasanya <2s; 3s beri margin tanpa latch selamanya
-        const val HOLD_TIMEOUT_MS = 3000L
+        // Data device (2026-07-05): semasa tahan sujud kepala MENUTUP lens
+        // sepenuhnya — detection hilang sampai 26s berterusan (desktop:
+        // intermittent <2s). Jadi hold TAMAT bila detection KEMBALI (kepala
+        // angkat = muka nampak semula), bukan timeout pendek. Siling 45s
+        // sebagai sanity guard supaya tak latch selamanya.
+        const val SUJUD_MAX_HOLD_MS = 45_000L
         // Ratio saturate ~0.28 pada desktop; skala confidence atas julat itu
         private const val SUJUD_SATURATE_RATIO = 0.28f
     }
 
-    private var lastNearMs = Long.MIN_VALUE / 2
+    private var holdStartMs = Long.MIN_VALUE / 2
+    private var inSujudHold = false
 
     fun classify(signal: BboxSignal?): PoseClassification {
         val now = nowMs()
 
         if (signal == null) {
-            // Tiada detection: kalau baru sahaja dekat, kepala mungkin
-            // menutup lens (fasa tahan sujud) — kekal SUJUD sehingga timeout.
-            // Jangan refresh lastNearMs di sini, elak latch selamanya.
-            return if (now - lastNearMs < HOLD_TIMEOUT_MS) {
+            // Tiada detection: kalau baru masuk SUJUD, kepala sedang
+            // menutup lens (fasa tahan) — kekal SUJUD sehingga detection
+            // kembali atau siling keselamatan tercapai.
+            return if (inSujudHold && now - holdStartMs < SUJUD_MAX_HOLD_MS) {
                 PoseClassification(PoseClass.SUJUD, 60)
             } else {
+                inSujudHold = false
                 PoseClassification(PoseClass.UNKNOWN, 0)
             }
         }
 
         if (signal.ratio >= SUJUD_ENTER_RATIO) {
-            lastNearMs = now
+            if (!inSujudHold) {
+                inSujudHold = true
+                holdStartMs = now
+            }
             val over = (signal.ratio - SUJUD_ENTER_RATIO) /
                 (SUJUD_SATURATE_RATIO - SUJUD_ENTER_RATIO)
             return PoseClassification(PoseClass.SUJUD, (60 + 40 * over).toInt().coerceIn(60, 100))
         }
+
+        // Detection kembali pada ratio bukan-dekat = kepala dah angkat,
+        // keluar dari hold sujud
+        inSujudHold = false
 
         if (signal.ratio > FAR_RATIO) {
             // Zon transisi 0.10-0.15 (jarang: 37/1787 frame desktop) —
@@ -110,7 +124,10 @@ class BboxClassifier(
         } else {
             (100 * (1f - nearest.value / totalSpread)).toInt().coerceIn(0, 100)
         }
-        val poseClass = if (confidence < 60) PoseClass.UNKNOWN else nearest.key
+        // ponytail: gate 55 (bukan 60) — data device 5 Julai: 3 baseline jauh
+        // rapat dalam ruang feature, gate 60 buat majoriti frame UNKNOWN.
+        // Formula conf sentiasa >=50, jadi 55 = "jelas lebih dekat sikit"
+        val poseClass = if (confidence < 55) PoseClass.UNKNOWN else nearest.key
         return PoseClassification(poseClass, confidence)
     }
 }
